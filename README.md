@@ -7,7 +7,7 @@ A lightweight, static-friendly race support website for family and friends track
 - Next.js App Router
 - TypeScript
 - Tailwind CSS
-- Static export friendly
+- Static-friendly pages
 - Ready for Vercel
 
 ## Local Setup
@@ -25,7 +25,7 @@ Then open `http://localhost:3000`.
 npm run build
 ```
 
-The project is configured with `output: "export"` in `next.config.ts`, so a production build creates a static `out/` directory.
+Vercel should use the standard Next.js build output. Do not set a custom Output Directory in Vercel project settings.
 
 ## Deploying to Vercel
 
@@ -33,7 +33,8 @@ The project is configured with `output: "export"` in `next.config.ts`, so a prod
 2. Go to Vercel and create a new project from the GitHub repository.
 3. Keep the default framework preset as Next.js.
 4. Use the default build command: `npm run build`.
-5. Deploy.
+5. Leave Output Directory blank.
+6. Deploy.
 
 ## Reusing as a Template
 
