@@ -11,8 +11,8 @@ html {
 }
 
 body {
-  background: #f7f8fa;
-  color: #17202a;
+  background: #080d14;
+  color: #f7f8fa;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
@@ -35,22 +35,87 @@ body {
     sans-serif;
 }
 
-.spectator-marker {
+.race-hero-image {
+  filter: saturate(0.92) contrast(0.96) brightness(0.86);
+}
+
+.race-map-layer {
+  filter: saturate(0.86) contrast(0.98) brightness(0.94);
+  opacity: 0.94;
+}
+
+.race-day-scrim {
+  background: linear-gradient(
+    180deg,
+    rgba(8, 13, 20, 0.82) 0%,
+    rgba(8, 13, 20, 0.38) 28%,
+    rgba(8, 13, 20, 0.34) 58%,
+    rgba(8, 13, 20, 0.9) 100%
+  );
+}
+
+@media (max-width: 640px) {
+  .race-map-layer {
+    opacity: 0.92;
+  }
+}
+
+.race-marker {
   align-items: center;
-  background: #ffffff;
-  border: 2px solid #ffffff;
+  background: rgba(11, 18, 27, 0.72);
+  border: 2px solid rgba(255, 255, 255, 0.92);
   border-radius: 999px;
-  box-shadow: 0 6px 18px rgba(23, 32, 42, 0.26);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
   display: flex;
   justify-content: center;
 }
 
-.spectator-marker span {
-  border: 2px solid #ffffff;
+.race-marker-family {
+  border-color: #2bb673;
+  box-shadow:
+    0 0 0 5px rgba(43, 182, 115, 0.22),
+    0 10px 28px rgba(0, 0, 0, 0.34);
+}
+
+.race-marker-ben-sighting {
+  border-color: #f28c38;
+  box-shadow:
+    0 0 0 5px rgba(242, 140, 56, 0.2),
+    0 10px 28px rgba(0, 0, 0, 0.34);
+}
+
+.race-marker-dot {
+  align-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.95);
   border-radius: 999px;
-  display: block;
-  height: 24px;
-  width: 24px;
+  color: #17202a;
+  display: flex;
+  font-size: 0.78rem;
+  font-weight: 950;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background-color: rgba(11, 18, 27, 0.34);
+}
+
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background: rgba(23, 32, 42, 0.92);
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.78) !important;
+  color: rgba(23, 32, 42, 0.72) !important;
+  font-size: 10px;
 }
 
 .spectator-popup .leaflet-popup-content-wrapper {

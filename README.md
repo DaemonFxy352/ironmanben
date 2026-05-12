@@ -1,23 +1,32 @@
 # IRONMAN Jacksonville Support HQ
 
-A lightweight, static-friendly race support website for family and friends tracking Ben through IRONMAN Jacksonville.
+A realtime race-day coordination map for family and friends tracking Ben through IRONMAN Jacksonville.
 
 ## Tech Stack
 
 - Next.js App Router
 - TypeScript
 - Tailwind CSS
-- Static-friendly pages
+- Leaflet + OpenStreetMap
+- Supabase Realtime
 - Ready for Vercel
 
 ## Local Setup
 
 ```bash
 npm install
+cp .env.example .env.local
 npm run dev
 ```
 
 Then open `http://localhost:3000`.
+
+The app renders without Supabase variables, but live check-ins and updates require:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
 
 ## Production Build
 
@@ -26,6 +35,16 @@ npm run build
 ```
 
 Vercel should use the standard Next.js build output. Do not set a custom Output Directory in Vercel project settings.
+
+## Supabase Setup
+
+Run `supabase/migrations/0001_race_day_coordination.sql` in the Supabase SQL editor, then add the environment variables from `.env.example`. Full setup and reset notes are in `docs/supabase-setup.md`.
+
+## Updating the Hero Image
+
+The homepage uses one visual background at `public/assets/bens-crew-sunset.png`. Replace that file to update the current Ben's Crew sunset image.
+
+The component reads the path from `src/data/visuals.ts`, which keeps the app ready for later phase-based imagery without adding a carousel now.
 
 ## Deploying to Vercel
 
@@ -38,7 +57,7 @@ Vercel should use the standard Next.js build output. Do not set a custom Output 
 
 ## Reusing as a Template
 
-Most race-specific content lives in `src/data/race.ts`. Update the athlete name, race title, overview cards, timeline, locations, and recommendations for future races.
+Most location-specific content lives in `src/data/mapPoints.ts`. The hero image path lives in `src/data/visuals.ts`.
 
 ## Updating Map Markers
 
