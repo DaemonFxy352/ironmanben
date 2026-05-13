@@ -893,7 +893,7 @@ body.sheet-open {
 
 .planner-hero-image-wrap {
   background: #cdd9e5;
-  height: clamp(180px, 38vw, 280px);
+  height: clamp(220px, 56vw, 360px);
   overflow: hidden;
   width: 100%;
 }
@@ -902,7 +902,7 @@ body.sheet-open {
   display: block;
   height: 100%;
   object-fit: cover;
-  object-position: center 55%;
+  object-position: center 40%;
   width: 100%;
 }
 

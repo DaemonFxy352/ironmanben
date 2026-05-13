@@ -36,9 +36,9 @@ export function SupportPlanner() {
       <header className="planner-hero planner-hero-with-image">
         <div className="planner-hero-image-wrap">
           <img
-            alt="Ben and family on the beach before race start"
+            alt="Ben's Crew in matching shirts at sunset on the beach"
             className="planner-hero-image"
-            src="/assets/crew-beach.jpg"
+            src="/assets/bens-crew-shirts-sunset.jpg"
           />
         </div>
         <div className="planner-hero-text">
