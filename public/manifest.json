@@ -3,7 +3,7 @@
   "short_name": "Race HQ",
   "description": "Race day crew coordination for IRONMAN Jacksonville",
   "start_url": "/",
-  "display": "fullscreen",
+  "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0d1117",
   "theme_color": "#0d1117",

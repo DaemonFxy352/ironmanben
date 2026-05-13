@@ -63,7 +63,19 @@ function getBikePrediction(now: number) {
   };
 }
 
-export function RaceTimeline({ latestBenUpdate }: { latestBenUpdate?: RaceUpdate }) {
+type RaceTimelineProps = {
+  compact?: boolean;
+  latestBenUpdate?: RaceUpdate;
+  onToggleDoneSegments?: () => void;
+  showDoneSegments?: boolean;
+};
+
+export function RaceTimeline({
+  compact = false,
+  latestBenUpdate,
+  onToggleDoneSegments,
+  showDoneSegments = false,
+}: RaceTimelineProps) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -85,19 +97,63 @@ export function RaceTimeline({ latestBenUpdate }: { latestBenUpdate?: RaceUpdate
     latestText.includes("bike") || latestText.includes("ponte") || latestText.includes("a1a");
   const isBikeActive = rows.some((segment) => segment.id === "bike" && segment.state.status === "active");
   const bikePrediction = isBikeActive || hasBikeSignal ? getBikePrediction(now) : null;
+  const currentSegment =
+    rows.find((segment) => segment.state.status === "active") ??
+    rows.find((segment) => segment.state.status === "future") ??
+    rows[rows.length - 1];
+  const doneSegments = rows.filter((segment) => segment.state.status === "done");
+  const doneCount = doneSegments.length;
+  const visibleRows = showDoneSegments
+    ? rows
+    : rows.filter((segment) => segment.state.status !== "done");
+  const doneSummary =
+    doneSegments.length > 0
+      ? `✓ ${doneSegments.map((segment) => segment.name).join(" & ")} Finished`
+      : null;
+
+  if (compact) {
+    return (
+      <div className="min-w-0 flex-1 font-mono">
+        <div className="flex items-center justify-between gap-3">
+          <p className="truncate text-xs font-black uppercase text-white">
+            {currentSegment.name} / {currentSegment.distance}
+          </p>
+          <p className="shrink-0 text-xs font-black text-lime-300">
+            {Math.round(currentSegment.state.progress)}%
+          </p>
+        </div>
+        <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/15">
+          <div
+            className="h-full rounded-full bg-lime-300"
+            style={{ width: `${currentSegment.state.progress}%` }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <section className="max-h-[38dvh] overflow-y-auto rounded-xl border border-white/20 bg-zinc-950/90 p-3 text-white shadow-2xl backdrop-blur-lg">
+    <section className="rounded-xl border border-white/10 bg-zinc-950/80 p-3 text-white shadow-2xl backdrop-blur-xl">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[0.68rem] font-black uppercase text-lime-300">Pit Wall</p>
           <h2 className="text-lg font-black leading-tight">What&apos;s Next</h2>
         </div>
-        <p className="font-mono text-[0.68rem] font-black uppercase text-white/50">ETA model</p>
+        {doneCount > 0 && onToggleDoneSegments ? (
+          <button
+            className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 font-mono text-[0.68rem] font-black uppercase text-white/70 transition-all active:scale-95"
+            type="button"
+            onClick={onToggleDoneSegments}
+          >
+            {showDoneSegments ? "Hide Done" : `Show Done (${doneCount})`}
+          </button>
+        ) : (
+          <p className="font-mono text-[0.68rem] font-black uppercase text-white/50">ETA model</p>
+        )}
       </div>
 
       {bikePrediction ? (
-        <div className="mt-3 rounded-xl border-2 border-lime-300 bg-black p-3 shadow-[0_0_22px_rgba(190,242,100,0.26)]">
+        <div className="mt-3 rounded-xl border-2 border-lime-300 bg-zinc-950/80 p-3 shadow-[0_0_22px_rgba(190,242,100,0.26)] backdrop-blur-xl">
           <p className="text-[0.68rem] font-black uppercase text-lime-300">Family Action</p>
           <p className="mt-1 text-sm font-black leading-5 text-white">
             Ben is at Ponte Vedra. Predicted back in Jacksonville in{" "}
@@ -120,7 +176,13 @@ export function RaceTimeline({ latestBenUpdate }: { latestBenUpdate?: RaceUpdate
       ) : null}
 
       <ol className="mt-3 space-y-2">
-        {rows.map((segment) => (
+        {!showDoneSegments && doneSummary ? (
+          <li className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-sm font-black text-white/65">
+            {doneSummary}
+          </li>
+        ) : null}
+
+        {visibleRows.map((segment) => (
           <li
             key={segment.id}
             className={`relative rounded-lg border p-3 transition-colors ${

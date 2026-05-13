@@ -76,23 +76,21 @@ body.sheet-open {
 }
 
 .race-map-layer {
-  filter: saturate(0.86) contrast(0.98) brightness(0.94);
-  opacity: 0.94;
+  filter: saturate(0.96) contrast(1) brightness(0.98);
+  height: 100vh !important;
+  opacity: 1;
+  width: 100vw !important;
 }
 
-.race-day-scrim {
-  background: linear-gradient(
-    180deg,
-    rgba(9, 9, 11, 0.82) 0%,
-    rgba(9, 9, 11, 0.36) 28%,
-    rgba(9, 9, 11, 0.3) 58%,
-    rgba(9, 9, 11, 0.92) 100%
-  );
+.race-map-layer > div,
+.race-map-layer .leaflet-container {
+  height: 100vh !important;
+  width: 100vw !important;
 }
 
 @media (max-width: 640px) {
   .race-map-layer {
-    opacity: 0.92;
+    opacity: 1;
   }
 }
 
@@ -115,7 +113,7 @@ body.sheet-open {
 
 .race-route-line {
   filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.55));
-  stroke-width: 3;
+  stroke-width: 6;
 }
 
 @keyframes cheer-pulse {

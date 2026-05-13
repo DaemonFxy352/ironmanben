@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import AthleteStatusBar from "@/components/AthleteStatusBar";
+import { DraggableInfoSheet } from "@/components/DraggableInfoSheet";
+import { FloatingDock } from "@/components/FloatingDock";
 import { AuthScreen } from "@/components/AuthScreen";
 import { CheckInModal } from "@/components/CheckInModal";
 import { PostUpdateModal } from "@/components/PostUpdateModal";
-import { RaceHeader } from "@/components/RaceHeader";
 import { RaceTimeline } from "@/components/RaceTimeline";
 import Toast from "@/components/Toast";
 import { mapPoints } from "@/data/mapPoints";
@@ -15,7 +15,7 @@ import { useBenSightingNotifications } from "@/hooks/useBenSightingNotifications
 import { useCheckIns } from "@/hooks/useCheckIns";
 import { quickBroadcasts, useQuickSync } from "@/hooks/useQuickSync";
 import { useRaceUpdates } from "@/hooks/useRaceUpdates";
-import type { ReactNode } from "react";
+import { addRaceMinutes } from "@/lib/raceSchedule";
 import type { CheckIn, CheckInInput } from "@/types/checkIn";
 import type { MapPoint } from "@/types/map";
 import type { QuickMessage, QuickMessageKind } from "@/types/message";
@@ -46,7 +46,6 @@ type MapFocusRequest = {
 type MarkerKind = "family" | "ben" | "parking" | "food" | "meetup";
 type StaticMarkerKind = Exclude<MarkerKind, "family">;
 type ActiveLayer = "route" | "family" | "parking" | "food" | "meetup" | "cheer" | "mobility";
-type ActiveNav = "home" | "map" | "updates" | "crew";
 type DockPanel = "updates" | "crew" | null;
 
 type BenSighting = {
@@ -55,8 +54,8 @@ type BenSighting = {
 };
 
 const jacksonvilleCenter = {
-  lat: 30.321,
-  lng: -81.672,
+  lat: 30.3322,
+  lng: -81.6557,
 };
 
 const defaultActiveLayers: ActiveLayer[] = ["route", "family", "meetup", "cheer"];
@@ -153,19 +152,6 @@ function formatTime(value: string) {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
-}
-
-function formatType(type: RaceUpdate["type"]) {
-  const labels: Record<RaceUpdate["type"], string> = {
-    ben: "Saw Ben",
-    parking: "Parking",
-    food: "Food",
-    meetup: "Meetup",
-    help: "Need Help",
-    general: "General",
-  };
-
-  return labels[type];
 }
 
 function staticMarkerKind(point: MapPoint): StaticMarkerKind {
@@ -335,7 +321,7 @@ function getBenStatus(latestBenUpdate: RaceUpdate | undefined) {
   if (!latestBenUpdate) {
     return {
       phase: "Race day",
-      lastSeen: "Waiting for first sighting",
+      lastSeen: "Map ready",
       next: "Memorial Park",
     };
   }
@@ -370,38 +356,6 @@ function getBenStatus(latestBenUpdate: RaceUpdate | undefined) {
     phase: "Run",
     lastSeen: latestBenUpdate.location || latestBenUpdate.message,
     next: "Riverside / Five Points",
-  };
-}
-
-function getBestSpot(latestBenUpdate: RaceUpdate | undefined) {
-  const status = getBenStatus(latestBenUpdate);
-
-  if (status.phase === "Finish") {
-    return {
-      title: "Riverfront Plaza",
-      why: "Finish meetup",
-      mapsUrl:
-        mapPoints.find((point) => point.id === "riverfront-plaza-finish")?.googleMapsUrl ??
-        "https://www.google.com/maps/search/?api=1&query=Riverfront%20Plaza%20Jacksonville%20FL",
-    };
-  }
-
-  if (status.phase === "Race day" || status.phase === "Swim") {
-    return {
-      title: "Memorial Park",
-      why: "Transition anchor",
-      mapsUrl:
-        mapPoints.find((point) => point.id === "memorial-park-transition")?.googleMapsUrl ??
-        "https://www.google.com/maps/search/?api=1&query=Memorial%20Park%20Jacksonville%20FL",
-    };
-  }
-
-  return {
-    title: "Riverside / Five Points",
-    why: "Repeat run sightings",
-    mapsUrl:
-      mapPoints.find((point) => point.id === "five-points")?.googleMapsUrl ??
-      "https://www.google.com/maps/search/?api=1&query=Five%20Points%20Jacksonville%20FL",
   };
 }
 
@@ -455,6 +409,65 @@ function shouldShowFinishHype(latestBenUpdate: RaceUpdate | undefined, latestPoi
   );
 }
 
+function getPhaseIcon(phase: string) {
+  if (phase === "Bike") {
+    return "🚴";
+  }
+
+  if (phase === "Run" || phase === "Finish") {
+    return "🏃";
+  }
+
+  return "🏊";
+}
+
+function getNextTarget(phase: string) {
+  const targetId =
+    phase === "Finish"
+      ? "riverfront-plaza-finish"
+      : phase === "Run"
+        ? "five-points"
+        : "memorial-park-transition";
+
+  return mapPoints.find((point) => point.id === targetId) ?? mapPoints[0];
+}
+
+function getPhaseEta(phase: string) {
+  if (phase === "Bike") {
+    return formatTime(addRaceMinutes(390).toISOString());
+  }
+
+  if (phase === "Run") {
+    return formatTime(addRaceMinutes(638).toISOString());
+  }
+
+  if (phase === "Finish") {
+    return "Now";
+  }
+
+  return formatTime(addRaceMinutes(90).toISOString());
+}
+
+function getCollapsedStatusText(phase: string, etaLabel: string) {
+  if (phase === "Bike") {
+    return `🚴 Out at Ponte Vedra - ETA T2: ${etaLabel}`;
+  }
+
+  if (phase === "Run" || phase === "Finish") {
+    return `🏃 On Final Leg - ETA FINISH: ${etaLabel}`;
+  }
+
+  return `🏊 Ben in Water - ETA T1: ${etaLabel}`;
+}
+
+function milesLabel(from: MapPoint | null, to: MapPoint) {
+  if (!from) {
+    return "-- mi";
+  }
+
+  return `${(distanceKm(from.coordinates, to.coordinates) * 0.621371).toFixed(1)} mi`;
+}
+
 function RaceMap({
   activeLayers,
   benSightings,
@@ -477,7 +490,6 @@ function RaceMap({
   const routeLineRef = useRef<{ remove: () => void } | null>(null);
   const safePathRefs = useRef<Array<{ remove: () => void }>>([]);
   const meetupAnchorRef = useRef<{ remove: () => void } | null>(null);
-  const hasFitInitialBoundsRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -498,10 +510,15 @@ function RaceMap({
           zoomControl: false,
         });
 
-        L.tileLayer("https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png", {
-          attribution: '© <a href="https://stadiamaps.com/">Stadia Maps</a>',
-          maxZoom: 20,
-        }).addTo(mapRef.current);
+        L.tileLayer(
+          "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+          {
+            attribution:
+              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            maxZoom: 20,
+            subdomains: "abcd",
+          },
+        ).addTo(mapRef.current);
 
         clusterRef.current = L.markerClusterGroup({
           maxClusterRadius: 42,
@@ -530,12 +547,11 @@ function RaceMap({
       if (activeLayers.has("route") && routeCoordinates.length > 1 && mapRef.current) {
         routeLineRef.current = L.polyline(routeCoordinates, {
           className: "race-route-line",
-          color: "#e84b1a",
-          dashArray: "8, 5",
+          color: "#ff4d4d",
           lineCap: "round",
           lineJoin: "round",
-          opacity: 0.85,
-          weight: 3,
+          opacity: 1,
+          weight: 6,
         }).addTo(mapRef.current);
 
         routeCoordinates.forEach((coordinate) => bounds.extend(coordinate));
@@ -682,14 +698,6 @@ function RaceMap({
         });
       }
 
-      if (bounds.isValid() && !hasFitInitialBoundsRef.current) {
-        mapRef.current.fitBounds(bounds, {
-          maxZoom: 14,
-          padding: [34, 34],
-        });
-        hasFitInitialBoundsRef.current = true;
-      }
-
       window.setTimeout(() => mapRef.current?.invalidateSize(), 0);
     }
 
@@ -771,7 +779,6 @@ function RaceMap({
       cheerZoneRefs.current = [];
       safePathRefs.current = [];
       meetupAnchorRef.current = null;
-      hasFitInitialBoundsRef.current = false;
     };
   }, []);
 
@@ -782,33 +789,6 @@ function RaceMap({
       className={`h-full min-h-dvh w-full ${isPickingManual ? "cursor-crosshair" : ""}`}
       role="application"
     />
-  );
-}
-
-function GlassCard({
-  action,
-  detail,
-  label,
-  title,
-}: {
-  action?: ReactNode;
-  detail: string;
-  label: string;
-  title: string;
-}) {
-  return (
-    <section className="rounded-xl border border-white/20 bg-zinc-950/85 p-3 text-white shadow-2xl backdrop-blur-lg sm:p-4">
-      <p className="text-[0.68rem] font-black uppercase text-white/50">{label}</p>
-      <div className="mt-1 flex items-end justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="truncate text-lg font-black leading-tight sm:text-xl">{title}</h2>
-          <p className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-white/70">
-            {detail}
-          </p>
-        </div>
-        {action}
-      </div>
-    </section>
   );
 }
 
@@ -915,11 +895,12 @@ function UpdateFeed({ updates }: { updates: RaceUpdate[] }) {
 }
 
 export function RaceDayApp() {
-  const [activeNav, setActiveNav] = useState<ActiveNav>("home");
   const [activeDockPanel, setActiveDockPanel] = useState<DockPanel>(null);
   const [activeLayers, setActiveLayers] = useState<Set<ActiveLayer>>(
     () => new Set(defaultActiveLayers),
   );
+  const [isInfoSheetExpanded, setIsInfoSheetExpanded] = useState(false);
+  const [showDoneSegments, setShowDoneSegments] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(
     () =>
       typeof window !== "undefined" &&
@@ -950,9 +931,7 @@ export function RaceDayApp() {
     setMeetupBanner(message);
   }, []);
   const {
-    error: quickSyncError,
     isConfigured: quickSyncConfigured,
-    isLoading: quickSyncLoading,
     isRealtimeStale: quickSyncRealtimeStale,
     messages: quickSyncMessages,
     sendQuickBroadcast,
@@ -960,15 +939,11 @@ export function RaceDayApp() {
   const {
     checkIns,
     createCheckIn,
-    error: checkInError,
     isConfigured: checkInsConfigured,
-    isLoading: checkInsLoading,
     isRealtimeStale: checkInsRealtimeStale,
   } = useCheckIns();
   const {
-    error: updatesError,
     isConfigured: updatesConfigured,
-    isLoading: updatesLoading,
     isRealtimeStale: updatesRealtimeStale,
     postUpdate,
     updates,
@@ -992,19 +967,11 @@ export function RaceDayApp() {
   }, [isAuthenticated]);
 
   const isConfigured = checkInsConfigured && updatesConfigured && quickSyncConfigured;
-  const isLoading = checkInsLoading || updatesLoading || quickSyncLoading;
   const isRealtimeStale =
     checkInsRealtimeStale || updatesRealtimeStale || quickSyncRealtimeStale;
-  const latestError = checkInError || updatesError || quickSyncError;
-  const latestUpdate = updates[0];
   const latestBenUpdate = updates.find((update) => update.type === "ben");
   const benStatus = getBenStatus(latestBenUpdate);
-  const bestSpot = getBestSpot(latestBenUpdate);
   const activeFamily = recentCheckIns(checkIns);
-  const activeFamilyNames = activeFamily
-    .slice(0, 3)
-    .map((checkIn) => checkIn.name)
-    .join(", ");
   const benSightings = useMemo(
     () =>
       updates
@@ -1027,6 +994,16 @@ export function RaceDayApp() {
           1,
         )} KM`
       : "5 KM";
+  const nextTarget = getNextTarget(benStatus.phase);
+  const collapsedEtaLabel = getPhaseEta(benStatus.phase);
+  const collapsedRaceInfo = {
+    etaLabel: collapsedEtaLabel,
+    icon: getPhaseIcon(benStatus.phase),
+    isStale: isRealtimeStale,
+    nextLabel: nextTarget.name,
+    nextMiles: milesLabel(latestAthletePoint, nextTarget),
+    statusText: getCollapsedStatusText(benStatus.phase, collapsedEtaLabel),
+  };
 
   useEffect(() => {
     if (isFinishHypeReady && !isFinishHypeDismissed) {
@@ -1095,8 +1072,8 @@ export function RaceDayApp() {
           headers: { "Content-Type": "application/json" },
           method: "POST",
         }).catch(console.error);
-        setActiveNav("crew");
         setActiveDockPanel("crew");
+        setIsInfoSheetExpanded(true);
       } catch (error) {
         showToast(error instanceof Error ? error.message : "Quick Sync failed.");
       } finally {
@@ -1104,6 +1081,34 @@ export function RaceDayApp() {
       }
     },
     [sendQuickBroadcast, showToast],
+  );
+  const quickSyncContent = (
+    <section className="rounded-2xl border border-white/10 bg-zinc-950/80 p-3 shadow-2xl backdrop-blur-xl">
+      <p className="text-xs font-black uppercase text-lime-300">Quick Sync</p>
+      <div className="mt-2 grid gap-2">
+        {quickBroadcasts.map((template) => (
+          <button
+            key={template.kind}
+            className={`focus-ring flex items-center justify-between gap-3 rounded-full border px-4 py-3 text-left text-sm font-black transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 ${
+              template.kind === "help_water"
+                ? "border-orange-300/50 bg-orange-500/20 text-white"
+                : "border-lime-300/35 bg-lime-300/10 text-lime-50"
+            }`}
+            disabled={!isConfigured || Boolean(sendingQuickKind)}
+            type="button"
+            onClick={() => handleQuickBroadcast(template)}
+          >
+            <span>{sendingQuickKind === template.kind ? "Sending..." : template.label}</span>
+            {sendingQuickKind === template.kind ? (
+              <span
+                aria-hidden="true"
+                className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-white/25 border-t-lime-300"
+              />
+            ) : null}
+          </button>
+        ))}
+      </div>
+    </section>
   );
 
   const handleRecenterMap = useCallback(() => {
@@ -1174,15 +1179,10 @@ export function RaceDayApp() {
     });
   };
 
-  const activateNav = (nav: ActiveNav) => {
-    setActiveNav(nav);
-    setActiveDockPanel(nav === "updates" || nav === "crew" ? nav : null);
-  };
-
   const panelContent = (() => {
     if (activeDockPanel === "updates") {
       return (
-        <section className="rounded-xl border border-white/20 bg-zinc-950/90 p-3 text-white shadow-2xl backdrop-blur-lg sm:p-4">
+        <section className="rounded-xl border border-white/10 bg-zinc-950/80 p-3 text-white shadow-2xl backdrop-blur-xl sm:p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="text-xl font-black">Updates</h2>
             <button
@@ -1202,7 +1202,7 @@ export function RaceDayApp() {
 
     if (activeDockPanel === "crew") {
       return (
-        <section className="rounded-xl border border-white/20 bg-zinc-950/90 p-3 text-white shadow-2xl backdrop-blur-lg sm:p-4">
+        <section className="rounded-xl border border-white/10 bg-zinc-950/80 p-3 text-white shadow-2xl backdrop-blur-xl sm:p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase text-lime-300">Crew</p>
@@ -1236,33 +1236,6 @@ export function RaceDayApp() {
                 No crew check-ins yet.
               </p>
             ) : null}
-          </div>
-
-          <div className="mt-4 border-t border-white/10 pt-3">
-            <p className="text-xs font-black uppercase text-white/45">Quick Broadcast</p>
-            <div className="mt-2 grid gap-2">
-              {quickBroadcasts.map((template) => (
-              <button
-                key={template.kind}
-                className={`focus-ring flex items-center justify-between gap-3 border px-4 py-3 text-left text-base font-black transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 ${
-                  template.kind === "help_water"
-                    ? "border-orange-300/50 bg-orange-500/20 text-white"
-                    : "border-lime-300/35 bg-lime-300/10 text-lime-50"
-                }`}
-                disabled={!isConfigured || Boolean(sendingQuickKind)}
-                type="button"
-                onClick={() => handleQuickBroadcast(template)}
-              >
-                <span>{sendingQuickKind === template.kind ? "Sending..." : template.label}</span>
-                {sendingQuickKind === template.kind ? (
-                  <span
-                    aria-hidden="true"
-                    className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-white/25 border-t-lime-300"
-                  />
-                ) : null}
-              </button>
-            ))}
-            </div>
           </div>
 
           {isAdmin ? (
@@ -1329,23 +1302,8 @@ export function RaceDayApp() {
   }
 
   return (
-    <main className="relative min-h-dvh overflow-hidden bg-zinc-950 text-white">
-      <RaceHeader isRealtimeStale={isRealtimeStale} racePhase={benStatus.phase} />
-      <AthleteStatusBar isRealtimeStale={isRealtimeStale} latestBenUpdate={latestBenUpdate} />
-      <div className="absolute inset-0 z-0">
-        <Image
-          aria-hidden="true"
-          alt=""
-          className="race-hero-image object-cover object-center"
-          fill
-          priority
-          sizes="100vw"
-          src={raceDayHeroImage.src}
-        />
-        <div className="absolute inset-0 bg-zinc-950/25" />
-      </div>
-
-      <div className="race-map-layer absolute inset-0 z-10">
+    <main className="relative min-h-dvh overflow-hidden bg-transparent text-white">
+      <div className="race-map-layer fixed inset-0 z-0">
         <RaceMap
           activeLayers={activeLayers}
           benSightings={benSightings}
@@ -1355,10 +1313,9 @@ export function RaceDayApp() {
           recenterRequest={recenterRequest}
         />
       </div>
-      <div className="race-day-scrim pointer-events-none absolute inset-0 z-20" />
 
-      {activeNav === "map" ? (
-        <div className="fixed left-3 top-[9rem] z-[1300] flex flex-col gap-1.5">
+      {isInfoSheetExpanded ? (
+        <div className="fixed left-3 top-[4.75rem] z-[1300] flex flex-col gap-1.5">
           {[
             { id: "route", label: "Route" },
             { id: "family", label: "Family" },
@@ -1373,10 +1330,10 @@ export function RaceDayApp() {
                 key={id}
                 className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all active:scale-95"
                 style={{
-                  background: isActive ? "rgba(232,75,26,0.3)" : "rgba(20,28,42,0.85)",
+                  background: isActive ? "rgba(232,75,26,0.3)" : "rgba(9,9,11,0.8)",
                   border: isActive
                     ? "1px solid rgba(232,75,26,0.5)"
-                    : "0.5px solid rgba(255,255,255,0.15)",
+                    : "0.5px solid rgba(255,255,255,0.1)",
                   color: isActive ? "#f07050" : "rgba(255,255,255,0.65)",
                   backdropFilter: "blur(8px)",
                 }}
@@ -1391,202 +1348,144 @@ export function RaceDayApp() {
         </div>
       ) : null}
 
-      <button
-        className="focus-ring fixed right-3 top-[9rem] z-[1300] flex items-center gap-2 border-2 border-lime-300 bg-black px-4 py-3 text-sm font-black text-white shadow-2xl transition-all active:scale-95"
-        disabled={isRecentering}
-        type="button"
-        onClick={handleRecenterMap}
-      >
-        <span aria-hidden="true" className="crosshair-icon" />
-        {isRecentering ? "Locating..." : "Recenter Map"}
-      </button>
-
-      <div className="pointer-events-none relative z-[1000] flex min-h-dvh flex-col justify-between px-2 pb-[6.75rem] pt-[8.75rem] sm:px-4 sm:pb-[7rem]">
-        <div className="pointer-events-auto max-w-5xl space-y-2">
-          {activeNav === "home" ? (
-            <>
-          <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_22rem]">
-            <section className="rounded-xl border border-white/20 bg-zinc-950/90 p-3 text-white shadow-2xl backdrop-blur-lg">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-black uppercase text-lime-300">Family Command</p>
-                  <h1 className="mt-1 text-2xl font-black leading-none sm:text-3xl">
-                    Ben Race HQ
-                  </h1>
-                </div>
-              </div>
-
-              <div className="mt-3 grid grid-cols-[6.25rem_1fr] gap-2">
-                <div className="rounded-lg border border-white/10 bg-white/10 p-3">
-                  <p className="text-xs font-black uppercase text-white/50">Phase</p>
-                  <p className="mt-1 font-mono text-xl font-black">{benStatus.phase}</p>
-                </div>
-                <div className="rounded-lg border border-white/10 bg-white/10 p-3">
-                  <p className="text-xs font-black uppercase text-white/50">Last seen</p>
-                  <p className="mt-1 line-clamp-2 text-base font-black leading-5">
-                    {benStatus.lastSeen}
-                  </p>
-                  <p className="mt-2 text-xs font-bold uppercase text-white/50">
-                    Next: {benStatus.next}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <button
-                  className="btn-primary focus-ring bg-river px-4 py-3 text-sm font-black text-white"
-                  type="button"
-                  onClick={() => setIsCheckInOpen(true)}
-                >
-                  Check In Here
-                </button>
-                <button
-                  className="btn-primary focus-ring border border-white/25 bg-white/10 px-4 py-3 text-sm font-black text-white"
-                  type="button"
-                  onClick={() => setIsPostOpen(true)}
-                >
-                  Saw Ben
-                </button>
-              </div>
-            </section>
-
-            <RaceTimeline latestBenUpdate={latestBenUpdate} />
-          </div>
-
-          <div
-            className="mb-3 flex items-center justify-between rounded-xl px-4 py-3"
-            style={{
-              background: "rgba(255,255,255,0.05)",
-              border: "0.5px solid rgba(255,255,255,0.09)",
-            }}
+      {manualDraft ? (
+        <div
+          className="fixed left-3 right-3 z-[1450] mx-auto max-w-xl rounded-2xl border border-white/10 bg-zinc-950/80 p-4 text-center text-white shadow-2xl backdrop-blur-xl"
+          style={{ bottom: "calc(13rem + env(safe-area-inset-bottom, 0px))" }}
+        >
+          <p className="text-lg font-black">Tap the map</p>
+          <p className="mt-1 text-sm font-bold text-white/70">Custom pin for {manualDraft.name}</p>
+          <button
+            className="focus-ring mt-3 rounded-full border border-white/25 bg-black/40 px-4 py-2 text-sm font-black"
+            type="button"
+            onClick={() => setManualDraft(null)}
           >
-            <div className="min-w-0">
-              <p className="mb-0.5 text-xs font-semibold uppercase tracking-wider text-white/35">
-                Meetup point
-              </p>
-              <p className="truncate text-base font-bold text-white">Memorial Park</p>
-              <p className="mt-0.5 text-xs text-white/40">If separated, go here</p>
-            </div>
-            <a
-              className="flex items-center rounded-lg px-3 py-2 text-xs font-semibold"
-              href="https://maps.apple.com/?q=Memorial+Park+Jacksonville+FL"
-              rel="noreferrer"
-              style={{
-                background: "rgba(255,255,255,0.08)",
-                color: "rgba(255,255,255,0.7)",
-                minHeight: "44px",
-              }}
-              target="_blank"
-            >
-              Directions
-            </a>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-3">
-            <GlassCard
-              label="Best spot now"
-              title={bestSpot.title}
-              detail={bestSpot.why}
-              action={
-                <a
-                  className="focus-ring shrink-0 rounded-xl border border-white/25 bg-white px-3 py-2 text-xs font-black text-zinc-950"
-                  href={bestSpot.mapsUrl}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  Maps
-                </a>
-              }
-            />
-            <GlassCard
-              label="Family active"
-              title={`${activeFamily.length} checked in`}
-              detail={activeFamilyNames || "Check in so everyone can find you"}
-            />
-            <GlassCard
-              label="Latest update"
-              title={latestUpdate ? formatType(latestUpdate.type) : "No updates"}
-              detail={
-                latestUpdate
-                  ? `${latestUpdate.message} · ${formatTime(latestUpdate.createdAt)}`
-                  : isLoading
-                    ? "Syncing"
-                    : "Post the first sighting"
-              }
-            />
-          </div>
-            </>
-          ) : null}
-
-          {process.env.NODE_ENV === "development" && !process.env.NEXT_PUBLIC_SUPABASE_URL ? (
-            <div className="py-1 text-center text-xs" style={{ background: "#3a1a0a", color: "#f07050" }}>
-              Dev: Supabase not configured
-            </div>
-          ) : null}
+            Cancel
+          </button>
         </div>
+      ) : null}
 
-        <div className="pointer-events-auto mx-auto w-full max-w-xl space-y-3">
-          {manualDraft ? (
-            <div className="rounded-xl border border-surge/40 bg-zinc-950/90 p-4 text-center shadow-2xl backdrop-blur-lg">
-              <p className="text-lg font-black">Tap the map</p>
-              <p className="mt-1 text-sm font-bold text-white/70">
-                Custom pin for {manualDraft.name}
-              </p>
-              <button
-                className="focus-ring mt-3 border border-white/25 px-4 py-2 text-sm font-black"
-                type="button"
-                onClick={() => setManualDraft(null)}
-              >
-                Cancel
-              </button>
-            </div>
-          ) : null}
-
-          {panelContent}
-        </div>
-      </div>
-
-      <nav
-        className="pb-safe fixed bottom-0 left-0 right-0 z-[1200] flex items-center border-t border-white/[0.07] bg-zinc-950/94 px-2 pt-2 shadow-2xl backdrop-blur-lg"
-        style={{ minHeight: "64px" }}
+      <DraggableInfoSheet
+        collapsedInfo={collapsedRaceInfo}
+        isExpanded={isInfoSheetExpanded}
+        onExpandedChange={setIsInfoSheetExpanded}
+        quickSync={quickSyncContent}
+        watermarkSrc={raceDayHeroImage.src}
+        timeline={
+          <RaceTimeline
+            latestBenUpdate={latestBenUpdate}
+            showDoneSegments={showDoneSegments}
+            onToggleDoneSegments={() => setShowDoneSegments((current) => !current)}
+          />
+        }
       >
-        <div className="mx-auto grid w-full max-w-xl grid-cols-4 gap-1">
-          {[
-            { id: "home", label: "Home", icon: "⌂" },
-            { id: "map", label: "Map", icon: "◈" },
-            { id: "updates", label: "Updates", icon: "◉" },
-            { id: "crew", label: "Crew", icon: "⊕" },
-          ].map((item) => {
-            const isActive = activeNav === item.id;
+        <div
+          className="flex items-center justify-between rounded-2xl border border-white/10 bg-zinc-950/80 px-4 py-3 backdrop-blur-xl"
+        >
+          <div className="min-w-0">
+            <p className="mb-0.5 text-xs font-semibold uppercase tracking-wider text-white/45">
+              Meetup point
+            </p>
+            <p className="truncate text-base font-bold text-white">Memorial Park</p>
+            <p className="mt-0.5 text-xs text-white/50">If separated, go here</p>
+          </div>
+          <a
+            className="flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold text-white/80"
+            href="https://maps.apple.com/?q=Memorial+Park+Jacksonville+FL"
+            rel="noreferrer"
+            style={{ minHeight: "44px" }}
+            target="_blank"
+          >
+            Directions
+          </a>
+        </div>
 
-            return (
-              <button
-                key={item.id}
-                className="focus-ring flex flex-col items-center justify-center gap-0.5 border-0 bg-transparent px-2 py-2 transition-all active:scale-95"
-                style={{ minHeight: "56px" }}
-                type="button"
-                onClick={() => activateNav(item.id as ActiveNav)}
-              >
-                <span
-                  className="text-2xl leading-none"
-                  style={{ color: isActive ? "#e84b1a" : "rgba(255,255,255,0.35)" }}
-                >
-                  {item.icon}
-                </span>
-                <span
-                  className="text-xs"
+        <section className="rounded-2xl border border-white/10 bg-zinc-950/80 p-3 shadow-2xl backdrop-blur-xl">
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { id: null, label: "Layers" },
+              { id: "updates", label: "Updates" },
+              { id: "crew", label: "Crew" },
+            ].map((item) => {
+              const isActive = activeDockPanel === item.id;
+
+              return (
+                <button
+                  key={item.label}
+                  className="focus-ring rounded-full border px-3 py-2 text-xs font-black uppercase transition-all active:scale-95"
                   style={{
-                    color: isActive ? "#f07050" : "rgba(255,255,255,0.3)",
-                    fontWeight: isActive ? 600 : 400,
+                    background: isActive ? "rgba(232,75,26,0.22)" : "rgba(255,255,255,0.08)",
+                    borderColor: isActive
+                      ? "rgba(232,75,26,0.5)"
+                      : "rgba(255,255,255,0.16)",
+                    color: isActive ? "#f07050" : "rgba(255,255,255,0.72)",
                   }}
+                  type="button"
+                  onClick={() => setActiveDockPanel(item.id as DockPanel)}
                 >
                   {item.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-3">
+            {activeDockPanel ? (
+              panelContent
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: "route", label: "Route" },
+                  { id: "family", label: "Family" },
+                  { id: "parking", label: "Parking" },
+                  { id: "mobility", label: "Mobility" },
+                ].map(({ id, label }) => {
+                  const layer = id as ActiveLayer;
+                  const isActive = activeLayers.has(layer);
+
+                  return (
+                    <button
+                      key={id}
+                      className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-black transition-all active:scale-95"
+                      style={{
+                        background: isActive
+                          ? "rgba(232,75,26,0.25)"
+                          : "rgba(255,255,255,0.08)",
+                        border: isActive
+                          ? "1px solid rgba(232,75,26,0.55)"
+                          : "1px solid rgba(255,255,255,0.16)",
+                        color: isActive ? "#f07050" : "rgba(255,255,255,0.72)",
+                      }}
+                      type="button"
+                      onClick={() => toggleLayer(layer)}
+                    >
+                      <span className="h-2 w-2 rounded-full bg-current" />
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {process.env.NODE_ENV === "development" && !process.env.NEXT_PUBLIC_SUPABASE_URL ? (
+          <div
+            className="py-1 text-center text-xs"
+            style={{ background: "#3a1a0a", color: "#f07050" }}
+          >
+            Dev: Supabase not configured
+          </div>
+        ) : null}
+      </DraggableInfoSheet>
+
+      <FloatingDock
+        isOffline={isRealtimeStale}
+        isRecentering={isRecentering}
+        onCheckIn={() => setIsCheckInOpen(true)}
+        onRecenter={handleRecenterMap}
+        onSawBen={() => setIsPostOpen(true)}
+      />
 
       {meetupBanner ? (
         <div className="fixed left-0 right-0 top-[60px] z-[2200] border-b-2 border-lime-300 bg-black px-3 py-3 text-white shadow-2xl">
@@ -1681,8 +1580,8 @@ export function RaceDayApp() {
         onPost={async (input) => {
           await postUpdate(input);
           showToast(input.type === "ben" ? "Ben sighting posted." : "Update posted.");
-          setActiveNav("updates");
           setActiveDockPanel("updates");
+          setIsInfoSheetExpanded(true);
         }}
       />
     </main>
