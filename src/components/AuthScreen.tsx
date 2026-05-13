@@ -1,67 +1,36 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type AuthScreenProps = {
-  isConfigured: boolean;
-  isLoading: boolean;
-  onSendOtp: (phone: string) => Promise<void>;
-  onVerifyOtp: (phone: string, token: string) => Promise<void>;
+  onAuthenticated: () => void;
+  onSkipGuest: () => void;
 };
 
-export function AuthScreen({ isConfigured, isLoading, onSendOtp, onVerifyOtp }: AuthScreenProps) {
-  const [phone, setPhone] = useState("");
-  const [token, setToken] = useState("");
-  const [hasSentCode, setHasSentCode] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const tokenRef = useRef<HTMLInputElement>(null);
+export function AuthScreen({ onAuthenticated, onSkipGuest }: AuthScreenProps) {
+  const router = useRouter();
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const passcode = process.env.NEXT_PUBLIC_RACE_PASSCODE ?? "";
+  const canSubmit = pin.length >= 4;
 
-  useEffect(() => {
-    if (hasSentCode) {
-      tokenRef.current?.focus();
-    }
-  }, [hasSentCode]);
-
-  async function sendCode() {
-    if (!isConfigured || phone.trim().length < 8 || isSubmitting) {
+  function submit() {
+    if (!canSubmit) {
       return;
     }
 
-    setIsSubmitting(true);
-    setStatus("Sending code...");
-
-    try {
-      await onSendOtp(phone);
-      setHasSentCode(true);
-      setStatus("Code sent.");
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Could not send code.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  async function verifyCode() {
-    if (!isConfigured || token.trim().length !== 6 || isSubmitting) {
+    if (pin === passcode) {
+      window.localStorage.setItem("auth_token", "crew_authenticated");
+      window.localStorage.removeItem("guest_name");
+      onAuthenticated();
+      router.replace("/");
       return;
     }
 
-    setIsSubmitting(true);
-    setStatus("Checking code...");
-
-    try {
-      await onVerifyOtp(phone, token);
-      setStatus("Logged in.");
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Could not verify code.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    setError("Wrong code — ask Ben");
+    setPin("");
   }
-
-  const canSend = isConfigured && phone.trim().length >= 8 && !isSubmitting && !isLoading;
-  const canVerify = isConfigured && token.trim().length === 6 && !isSubmitting && !isLoading;
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-zinc-950 p-3 text-white">
@@ -69,66 +38,58 @@ export function AuthScreen({ isConfigured, isLoading, onSendOtp, onVerifyOtp }: 
         <p className="text-xs font-black uppercase text-lime-300">Ben Race HQ</p>
         <h1 className="mt-1 text-3xl font-black leading-tight">Family Login</h1>
         <p className="mt-3 text-sm font-bold leading-6 text-white/70">
-          Enter a phone number to get a one-time code. No password needed.
+          Enter the race-day crew code.
         </p>
 
-        {!isConfigured ? (
-          <p className="mt-4 rounded-xl border border-orange-300/35 bg-orange-500/20 p-3 text-sm font-bold text-white">
-            Supabase is not configured yet. Add the environment variables before race day.
-          </p>
-        ) : null}
-
-        <label className="mt-5 block text-sm font-black text-white" htmlFor="auth-phone">
-          Phone number
+        <label className="mt-5 block text-sm font-black text-white" htmlFor="auth-pin">
+          Crew PIN
         </label>
         <input
-          id="auth-phone"
-          className="mt-2 h-14 w-full rounded-xl border border-white/25 bg-white px-3 font-mono text-lg font-black text-zinc-950 outline-none focus:border-lime-300"
-          autoComplete="tel"
-          inputMode="tel"
-          placeholder="+19045550123"
-          value={phone}
-          onChange={(event) => setPhone(event.target.value)}
+          id="auth-pin"
+          autoComplete="one-time-code"
+          className="mt-2 h-14 w-full rounded-xl border border-white/25 bg-white px-3 text-center font-mono text-2xl font-black tracking-[0.18em] text-zinc-950 outline-none focus:border-lime-300"
+          inputMode="numeric"
+          maxLength={6}
+          placeholder="••••"
+          type="password"
+          value={pin}
+          onChange={(event) => {
+            setError(null);
+            setPin(event.target.value.replace(/\D/g, "").slice(0, 6));
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              submit();
+            }
+          }}
         />
 
         <button
           className="focus-ring mt-4 w-full bg-lime-300 px-4 py-3 text-base font-black text-black disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!canSend}
+          disabled={!canSubmit}
           type="button"
-          onClick={sendCode}
+          onClick={submit}
         >
-          Send Code
+          Enter Race HQ
         </button>
 
-        {hasSentCode ? (
-          <>
-            <label className="mt-5 block text-sm font-black text-white" htmlFor="auth-code">
-              6-digit code
-            </label>
-            <input
-              ref={tokenRef}
-              id="auth-code"
-              className="mt-2 h-14 w-full rounded-xl border border-white/25 bg-white px-3 text-center font-mono text-2xl font-black tracking-[0.18em] text-zinc-950 outline-none focus:border-lime-300"
-              autoComplete="one-time-code"
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="000000"
-              value={token}
-              onChange={(event) => setToken(event.target.value.replace(/\D/g, "").slice(0, 6))}
-            />
-
-            <button
-              className="focus-ring mt-4 w-full bg-white px-4 py-3 text-base font-black text-zinc-950 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={!canVerify}
-              type="button"
-              onClick={verifyCode}
-            >
-              Log In
-            </button>
-          </>
+        {error ? (
+          <div className="mt-3 rounded-xl border border-[#e84b1a]/30 bg-[#e84b1a]/15 p-3 text-sm font-medium text-[#f07050]">
+            {error}
+          </div>
         ) : null}
 
-        {status ? <p className="mt-4 text-sm font-bold text-white/75">{status}</p> : null}
+        <button
+          className="mt-4 w-full border-0 bg-transparent py-2 text-center text-sm text-white/30"
+          style={{ minHeight: "44px" }}
+          type="button"
+          onClick={() => {
+            window.localStorage.setItem("guest_name", "Guest");
+            onSkipGuest();
+          }}
+        >
+          Skip login — view as guest
+        </button>
       </section>
     </main>
   );

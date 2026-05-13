@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import BottomSheet from "@/components/BottomSheet";
 import { CHEER_LOCATIONS, getRaceLocation } from "@/lib/raceLocations";
+import { formatPhoneE164 } from "@/lib/sms";
+import { getSupabaseClient } from "@/lib/supabase";
 import type { CheckInInput } from "@/types/checkIn";
 
 type ManualDraft = {
@@ -16,6 +18,7 @@ type CheckInModalProps = {
   onClose: () => void;
   onCreate: (input: CheckInInput) => Promise<void>;
   onManualPick: (draft: ManualDraft) => void;
+  phoneNumber?: string | null;
 };
 
 const crewNameKey = "crew_name";
@@ -34,10 +37,18 @@ function rememberCrewName(name: string) {
   window.localStorage.setItem(legacyNameKey, name);
 }
 
-export function CheckInModal({ isConfigured, isOpen, onClose, onCreate }: CheckInModalProps) {
+export function CheckInModal({
+  isConfigured,
+  isOpen,
+  onClose,
+  onCreate,
+  phoneNumber,
+}: CheckInModalProps) {
+  const [alreadySubscribed, setAlreadySubscribed] = useState(false);
   const [name, setName] = useState(savedCrewName);
   const [selectedLoc, setSelectedLoc] = useState("");
   const [status, setStatus] = useState<string | null>(null);
+  const [wantsSMS, setWantsSMS] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -45,9 +56,11 @@ export function CheckInModal({ isConfigured, isOpen, onClose, onCreate }: CheckI
       return;
     }
 
+    setAlreadySubscribed(window.localStorage.getItem("sms_subscribed") === "true");
     setName(savedCrewName());
     setSelectedLoc("");
     setStatus(null);
+    setWantsSMS(false);
     setIsSubmitting(false);
   }, [isOpen]);
 
@@ -68,6 +81,11 @@ export function CheckInModal({ isConfigured, isOpen, onClose, onCreate }: CheckI
     setStatus("Checking in...");
 
     try {
+      if (window.localStorage.getItem("guest_name") === "Guest") {
+        setStatus("Enter the crew PIN to check in.");
+        return;
+      }
+
       rememberCrewName(trimmedName);
       await onCreate({
         name: trimmedName,
@@ -76,6 +94,32 @@ export function CheckInModal({ isConfigured, isOpen, onClose, onCreate }: CheckI
         lng: selected.coordinates.lng,
         source: "manual",
       });
+
+      if (wantsSMS && phoneNumber && !alreadySubscribed) {
+        const supabase = getSupabaseClient();
+
+        if (supabase) {
+          const { error } = await supabase.from("notification_subscribers").upsert(
+            {
+              display_name: trimmedName,
+              is_active: true,
+              notify_crew: false,
+              notify_finish: true,
+              notify_meetup: true,
+              notify_sightings: true,
+              phone_e164: formatPhoneE164(phoneNumber),
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "phone_e164" },
+          );
+
+          if (!error) {
+            window.localStorage.setItem("sms_subscribed", "true");
+            window.localStorage.setItem("sms_phone", phoneNumber);
+          }
+        }
+      }
+
       setStatus("Checked in.");
       onClose();
     } catch (error) {
@@ -129,6 +173,34 @@ export function CheckInModal({ isConfigured, isOpen, onClose, onCreate }: CheckI
           </button>
         ))}
       </div>
+
+      {!alreadySubscribed && phoneNumber ? (
+        <div className="mb-3 rounded-xl border border-white/10 bg-white/[0.04] p-3.5">
+          <div className="flex items-start gap-3">
+            <button
+              aria-label="Toggle SMS notifications"
+              className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded transition-all"
+              style={{
+                background: wantsSMS ? "#e84b1a" : "rgba(255,255,255,0.08)",
+                border: wantsSMS ? "1px solid #e84b1a" : "0.5px solid rgba(255,255,255,0.2)",
+                minHeight: "unset",
+              }}
+              type="button"
+              onClick={() => setWantsSMS((current) => !current)}
+            >
+              {wantsSMS ? <span className="text-sm leading-none text-white">✓</span> : null}
+            </button>
+            <div>
+              <p className="text-sm font-semibold leading-tight text-white">
+                Text me when Ben is spotted
+              </p>
+              <p className="mt-0.5 text-xs text-white/40">
+                You&apos;ll get texts for sightings and finish line alerts.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <button
         className="btn-primary w-full rounded-xl px-4 py-4 text-base font-bold text-white transition-opacity active:scale-95"

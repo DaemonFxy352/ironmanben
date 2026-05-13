@@ -77,6 +77,11 @@ export function PostUpdateModal({ isConfigured, isOpen, onClose, onPost }: PostU
     setStatus("Posting...");
 
     try {
+      if (window.localStorage.getItem("guest_name") === "Guest") {
+        setStatus("Enter the crew PIN to post updates.");
+        return;
+      }
+
       rememberCrewName(cleanAuthor);
       await onPost({
         author: cleanAuthor,
@@ -84,6 +89,19 @@ export function PostUpdateModal({ isConfigured, isOpen, onClose, onPost }: PostU
         location: selected,
         type,
       });
+
+      if (type === "ben") {
+        fetch("/api/notify/sighting", {
+          body: JSON.stringify({
+            note: cleanNote || null,
+            spottedAt: selected,
+            spottedBy: cleanAuthor,
+          }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        }).catch(console.error);
+      }
+
       setStatus("Posted.");
       onClose();
     } catch (error) {

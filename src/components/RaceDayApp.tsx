@@ -13,7 +13,6 @@ import { mapPoints } from "@/data/mapPoints";
 import { raceDayHeroImage } from "@/data/visuals";
 import { useBenSightingNotifications } from "@/hooks/useBenSightingNotifications";
 import { useCheckIns } from "@/hooks/useCheckIns";
-import { usePhoneAuth } from "@/hooks/usePhoneAuth";
 import { quickBroadcasts, useQuickSync } from "@/hooks/useQuickSync";
 import { useRaceUpdates } from "@/hooks/useRaceUpdates";
 import type { ReactNode } from "react";
@@ -916,12 +915,20 @@ function UpdateFeed({ updates }: { updates: RaceUpdate[] }) {
 }
 
 export function RaceDayApp() {
-  const auth = usePhoneAuth();
   const [activeNav, setActiveNav] = useState<ActiveNav>("home");
   const [activeDockPanel, setActiveDockPanel] = useState<DockPanel>(null);
   const [activeLayers, setActiveLayers] = useState<Set<ActiveLayer>>(
     () => new Set(defaultActiveLayers),
   );
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.localStorage.getItem("auth_token") === "crew_authenticated",
+  );
+  const [isGuest, setIsGuest] = useState(
+    () => typeof window !== "undefined" && window.localStorage.getItem("guest_name") === "Guest",
+  );
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
   const [isPostOpen, setIsPostOpen] = useState(false);
   const [manualDraft, setManualDraft] = useState<ManualDraft | null>(null);
@@ -968,9 +975,21 @@ export function RaceDayApp() {
   } = useRaceUpdates();
 
   useBenSightingNotifications({
-    enabled: auth.isAuthenticated,
+    enabled: isAuthenticated,
     updates,
   });
+
+  useEffect(() => {
+    setIsGuest(window.localStorage.getItem("guest_name") === "Guest");
+    setIsAuthenticated(window.localStorage.getItem("auth_token") === "crew_authenticated");
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      window.localStorage.removeItem("guest_name");
+      setIsGuest(false);
+    }
+  }, [isAuthenticated]);
 
   const isConfigured = checkInsConfigured && updatesConfigured && quickSyncConfigured;
   const isLoading = checkInsLoading || updatesLoading || quickSyncLoading;
@@ -1015,6 +1034,13 @@ export function RaceDayApp() {
     }
   }, [isFinishHypeDismissed, isFinishHypeReady]);
 
+  useEffect(() => {
+    setIsAdmin(
+      Boolean(process.env.NEXT_PUBLIC_ADMIN_KEY) &&
+        window.localStorage.getItem("admin_key") === process.env.NEXT_PUBLIC_ADMIN_KEY,
+    );
+  }, []);
+
   const handleCreateCheckIn = useCallback(
     async (input: CheckInInput) => {
       await createCheckIn(input);
@@ -1048,6 +1074,11 @@ export function RaceDayApp() {
 
   const handleQuickBroadcast = useCallback(
     async (template: (typeof quickBroadcasts)[number]) => {
+      if (window.localStorage.getItem("guest_name") === "Guest") {
+        showToast("Enter the crew PIN to broadcast.");
+        return;
+      }
+
       setSendingQuickKind(template.kind);
 
       try {
@@ -1056,6 +1087,14 @@ export function RaceDayApp() {
           window.localStorage.getItem(savedNameKey) ||
           "Family";
         await sendQuickBroadcast(template, author);
+        fetch("/api/notify/meetup", {
+          body: JSON.stringify({
+            newLocation: template.location,
+            reason: template.message,
+          }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        }).catch(console.error);
         setActiveNav("crew");
         setActiveDockPanel("crew");
       } catch (error) {
@@ -1226,6 +1265,29 @@ export function RaceDayApp() {
             </div>
           </div>
 
+          {isAdmin ? (
+            <button
+              className="btn-primary mt-3 w-full rounded-xl px-4 py-4 text-base font-bold text-white transition-all active:scale-95"
+              style={{ background: "#1a6e3c" }}
+              type="button"
+              onClick={async () => {
+                if (!window.confirm("Send FINISH LINE alert to all subscribers?")) {
+                  return;
+                }
+
+                const response = await fetch("/api/notify/finish", {
+                  body: JSON.stringify({ finishTime: new Date().toLocaleTimeString() }),
+                  headers: { "Content-Type": "application/json" },
+                  method: "POST",
+                });
+                const data = await response.json();
+                window.alert(`Sent to ${data.sent ?? 0} people`);
+              }}
+            >
+              Ben Finished — Alert Everyone
+            </button>
+          ) : null}
+
           <div className="mt-4 border-t border-white/10 pt-3">
             <p className="text-xs font-black uppercase text-white/45">Latest broadcasts</p>
             <div className="mt-2 space-y-2">
@@ -1257,24 +1319,11 @@ export function RaceDayApp() {
     return null;
   })();
 
-  if (auth.isConfigured && auth.isLoading) {
-    return (
-      <main className="flex min-h-dvh items-center justify-center bg-zinc-950 p-6 text-white">
-        <div className="w-full max-w-sm rounded-xl border border-white/20 bg-black p-5 text-center shadow-2xl">
-          <p className="text-sm font-black uppercase text-lime-300">Loading login</p>
-          <h1 className="mt-2 text-3xl font-black">Ben Race HQ</h1>
-        </div>
-      </main>
-    );
-  }
-
-  if (auth.isConfigured && !auth.isAuthenticated) {
+  if (!isAuthenticated && !isGuest) {
     return (
       <AuthScreen
-        isConfigured={auth.isConfigured}
-        isLoading={auth.isLoading}
-        onSendOtp={auth.sendOtp}
-        onVerifyOtp={auth.verifyOtp}
+        onAuthenticated={() => setIsAuthenticated(true)}
+        onSkipGuest={() => setIsGuest(true)}
       />
     );
   }
@@ -1622,6 +1671,7 @@ export function RaceDayApp() {
           setIsCheckInOpen(false);
           showToast("Tap the map to place your check-in.");
         }}
+        phoneNumber={window.localStorage.getItem("sms_phone")}
       />
 
       <PostUpdateModal

@@ -1,6 +1,6 @@
 # Supabase Race-Day Setup
 
-This app uses Supabase directly from the browser for temporary race-day coordination. Phone OTP login is handled by Supabase Auth; there is no API route or backend server in this repo.
+This app uses Supabase directly from the browser for temporary race-day coordination. Phone OTP login is handled by Supabase Auth. Non-auth SMS alerts are sent through a Supabase Edge Function and server-side Next.js API routes.
 
 ## 1. Create Tables and Policies
 
@@ -11,13 +11,28 @@ The migration creates:
 - `check_ins`
 - `race_updates`
 - `messages`
+- `notification_subscribers`
+- `sms_log`
 - public anonymous `select` and `insert` policies
 - authenticated `select` and `insert` policies for phone OTP users
 - realtime publication entries for check-ins and race updates
 - the `help` update type used by the "Need Help" quick update
 - Quick Sync broadcast storage in the `messages` table
+- SMS subscriber preferences and the `get_subscriber_phones` RPC
 
-Enable Supabase Auth phone login in the Supabase dashboard and configure an SMS provider before race day.
+Enable Supabase Auth phone login in the Supabase dashboard and configure Textlocal before race day:
+
+1. Authentication → Providers → Phone
+2. Enable Phone Provider
+3. SMS Provider: Textlocal
+4. API Key: same value as the `TXT_API` Edge Function secret
+5. Sender: `RACEHQ`
+
+Deploy the SMS Edge Function after migrations:
+
+```bash
+npx supabase functions deploy send-sms --no-verify-jwt
+```
 
 ## 2. Environment Variables
 
@@ -26,6 +41,9 @@ Create `.env.local` for local development:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-or-publishable-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SMS_FUNCTION_URL=https://your-project.supabase.co/functions/v1/send-sms
+NEXT_PUBLIC_ADMIN_KEY=your-secret-admin-word
 ```
 
 Use the same values in Vercel Project Settings under Environment Variables.
