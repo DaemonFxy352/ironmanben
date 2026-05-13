@@ -885,3 +885,78 @@ body.sheet-open {
   border-radius: 0.625rem;
 }
 
+/* Hero image */
+.planner-hero-with-image {
+  overflow: hidden;
+  padding: 0;
+}
+
+.planner-hero-image-wrap {
+  background: #cdd9e5;
+  height: clamp(180px, 38vw, 280px);
+  overflow: hidden;
+  width: 100%;
+}
+
+.planner-hero-image {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 55%;
+  width: 100%;
+}
+
+.planner-hero-text {
+  padding: 1.5rem 1.25rem;
+}
+
+/* Schematic map */
+.schematic-map {
+  border: 1px solid #e6e1d4;
+  border-radius: 0.75rem;
+  margin: 0;
+  overflow: hidden;
+}
+
+.schematic-map-svg {
+  background: #f1ede2;
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.schematic-map-caption {
+  background: #fbfaf6;
+  border-bottom: 1px solid #e6e1d4;
+  color: #555;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.875rem;
+}
+
+.schematic-map .planner-legend {
+  border: 0;
+  border-radius: 0;
+  border-top: 1px solid #e6e1d4;
+}
+
+/* Finish image */
+.planner-finish-image figure {
+  margin: 0;
+}
+
+.planner-finish-image-img {
+  border-radius: 0.75rem;
+  display: block;
+  height: auto;
+  max-height: 480px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.planner-finish-image figcaption {
+  color: #555;
+  font-size: 0.95rem;
+  margin-top: 0.625rem;
+  text-align: center;
+}
+

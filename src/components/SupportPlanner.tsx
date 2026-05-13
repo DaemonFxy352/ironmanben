@@ -1,8 +1,4 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { PlannerMap } from "@/components/PlannerMap";
+import { SchematicMap } from "@/components/SchematicMap";
 import {
   disciplineColors,
   parkingSpots,
@@ -33,34 +29,36 @@ const disciplineWordmark: Record<Discipline, string> = {
 };
 
 export function SupportPlanner() {
-  const [focusId, setFocusId] = useState<string | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   const sortedSpots = [...recommendedSpots].sort((a, b) => a.priority - b.priority);
 
   return (
     <main className="planner-page">
-      <header className="planner-hero">
-        <p className="planner-eyebrow">Ben&apos;s Crew · IRONMAN Jacksonville · Nov 2026</p>
-        <h1>Where to go to cheer Ben on</h1>
-        <p className="planner-lead">
-          This page helps the family and friends plan race day. The map below
-          shows the swim, bike, and run in three different colors. The stars
-          show the best places to stand and cheer. Tap any star to see why it
-          matters, how easy it is, and how to get there.
-        </p>
-        <div className="planner-hero-actions">
-          <a className="planner-cta" href="#map">See the map</a>
-          <a className="planner-cta planner-cta-secondary" href="#spots">
-            See recommended spots
-          </a>
-          <Link className="planner-cta planner-cta-secondary" href="/race-day">
-            Open live race-day app
-          </Link>
+      <header className="planner-hero planner-hero-with-image">
+        <div className="planner-hero-image-wrap">
+          <img
+            alt="Ben and family on the beach before race start"
+            className="planner-hero-image"
+            src="/assets/crew-beach.jpg"
+          />
+        </div>
+        <div className="planner-hero-text">
+          <p className="planner-eyebrow">Ben&apos;s Crew · IRONMAN Jacksonville · May 2026</p>
+          <h1>Where to go to cheer Ben on</h1>
+          <p className="planner-lead">
+            This page helps the family and friends plan race day. The map below
+            shows the swim, bike, and run in three different colors. The stars
+            show the best places to stand and cheer. Tap any star to see why it
+            matters, how easy it is, and how to get there.
+          </p>
+          <div className="planner-hero-actions">
+            <a className="planner-cta" href="#map">See the map</a>
+            <a className="planner-cta planner-cta-secondary" href="#spots">
+              See recommended spots
+            </a>
+            <a className="planner-cta planner-cta-secondary" href="./race-day/">
+              Open live race-day app
+            </a>
+          </div>
         </div>
       </header>
 
@@ -80,15 +78,8 @@ export function SupportPlanner() {
         <p className="planner-section-lead">
           Each part of the race is in its own color. Stars mark the best places
           to cheer. <strong>P</strong> markers show parking near cheer spots.
-          Use the checkboxes on the legend to hide or show layers.
         </p>
-        {isMounted ? (
-          <PlannerMap focusId={focusId} />
-        ) : (
-          <div className="planner-map-loading">
-            <p>Loading race map…</p>
-          </div>
-        )}
+        <SchematicMap />
       </section>
 
       <section className="planner-section" id="spots">
@@ -147,13 +138,6 @@ export function SupportPlanner() {
                     target="_blank"
                   >
                     Get driving directions
-                  </a>
-                  <a
-                    className="spot-card-button"
-                    href="#map"
-                    onClick={() => setFocusId(spot.id)}
-                  >
-                    Show on map
                   </a>
                 </div>
               </li>
@@ -243,11 +227,25 @@ export function SupportPlanner() {
         </div>
       </section>
 
+      <section className="planner-section planner-finish-image">
+        <figure>
+          <img
+            alt="Ben with family after the race, medal around his neck on the beach"
+            className="planner-finish-image-img"
+            src="/assets/medal-portrait.jpg"
+          />
+          <figcaption>
+            The whole point. Get the crew to the finish — Ben earns the medal,
+            you earn the photo.
+          </figcaption>
+        </figure>
+      </section>
+
       <section className="planner-section planner-footer-note">
         <h2>Want to do more than cheer?</h2>
         <p>
           On race day, the live tracking and check-in tools are on the{" "}
-          <Link href="/race-day">live race-day app</Link>. You can leave this
+          <a href="./race-day/">live race-day app</a>. You can leave this
           page open for the plan and open the live app when the race starts.
         </p>
       </section>
