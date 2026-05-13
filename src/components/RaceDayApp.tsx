@@ -9,6 +9,11 @@ import { CheckInModal } from "@/components/CheckInModal";
 import { PostUpdateModal } from "@/components/PostUpdateModal";
 import { RaceTimeline } from "@/components/RaceTimeline";
 import Toast from "@/components/Toast";
+import { StatusBar } from "@/components/StatusBar";
+import { ActionBar } from "@/components/ActionBar";
+import { MainPanel } from "@/components/panels/MainPanel";
+import type { MapLayer } from "@/components/panels/LayersPanel";
+import type { QuickBroadcastTemplate } from "@/types/message";
 import { mapPoints } from "@/data/mapPoints";
 import { raceDayHeroImage } from "@/data/visuals";
 import { useBenSightingNotifications } from "@/hooks/useBenSightingNotifications";
@@ -511,7 +516,7 @@ function RaceMap({
         });
 
         L.tileLayer(
-          "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+          "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
           {
             attribution:
               '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -895,64 +900,25 @@ function UpdateFeed({ updates }: { updates: RaceUpdate[] }) {
 }
 
 export function RaceDayApp() {
-  const [activeDockPanel, setActiveDockPanel] = useState<DockPanel>(null);
-  const [activeLayers, setActiveLayers] = useState<Set<ActiveLayer>>(
-    () => new Set(defaultActiveLayers),
+  const [activeLayers, setActiveLayers] = useState<Set<MapLayer>>(
+    () => new Set(["route", "family"] as MapLayer[])
   );
-  const [isInfoSheetExpanded, setIsInfoSheetExpanded] = useState(false);
-  const [showDoneSegments, setShowDoneSegments] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(
     () =>
       typeof window !== "undefined" &&
-      window.localStorage.getItem("auth_token") === "crew_authenticated",
+      window.localStorage.getItem("auth_token") === "crew_authenticated"
   );
   const [isGuest, setIsGuest] = useState(
-    () => typeof window !== "undefined" && window.localStorage.getItem("guest_name") === "Guest",
+    () => typeof window !== "undefined" && window.localStorage.getItem("guest_name") === "Guest"
   );
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isCheckInOpen, setIsCheckInOpen] = useState(false);
-  const [isPostOpen, setIsPostOpen] = useState(false);
-  const [manualDraft, setManualDraft] = useState<ManualDraft | null>(null);
-  const [meetupBanner, setMeetupBanner] = useState<QuickMessage | null>(null);
-  const [isRecentering, setIsRecentering] = useState(false);
-  const [recenterRequest, setRecenterRequest] = useState<MapFocusRequest | null>(null);
   const [sendingQuickKind, setSendingQuickKind] = useState<QuickMessageKind | null>(null);
-  const [isFinishHypeDismissed, setIsFinishHypeDismissed] = useState(false);
-  const [showFinishHype, setShowFinishHype] = useState(false);
   const [toast, setToast] = useState({ message: "", visible: false });
-  const showToast = useCallback((message: string) => {
-    setToast({ message, visible: true });
-  }, []);
-  const handleQuickSyncBroadcast = useCallback((message: QuickMessage) => {
-    if ("vibrate" in navigator) {
-      navigator.vibrate([90, 40, 90]);
-    }
 
-    setMeetupBanner(message);
-  }, []);
-  const {
-    isConfigured: quickSyncConfigured,
-    isRealtimeStale: quickSyncRealtimeStale,
-    messages: quickSyncMessages,
-    sendQuickBroadcast,
-  } = useQuickSync({ onBroadcast: handleQuickSyncBroadcast });
-  const {
-    checkIns,
-    createCheckIn,
-    isConfigured: checkInsConfigured,
-    isRealtimeStale: checkInsRealtimeStale,
-  } = useCheckIns();
-  const {
-    isConfigured: updatesConfigured,
-    isRealtimeStale: updatesRealtimeStale,
-    postUpdate,
-    updates,
-  } = useRaceUpdates();
+  const { updates, isConfigured: updatesConfigured } = useRaceUpdates();
+  const { checkIns, isConfigured: checkInsConfigured } = useCheckIns();
+  const { sendQuickBroadcast, isConfigured: quickSyncConfigured } = useQuickSync();
 
-  useBenSightingNotifications({
-    enabled: isAuthenticated,
-    updates,
-  });
+  const isConfigured = updatesConfigured && checkInsConfigured && quickSyncConfigured;
 
   useEffect(() => {
     setIsGuest(window.localStorage.getItem("guest_name") === "Guest");
@@ -966,93 +932,10 @@ export function RaceDayApp() {
     }
   }, [isAuthenticated]);
 
-  const isConfigured = checkInsConfigured && updatesConfigured && quickSyncConfigured;
-  const isRealtimeStale =
-    checkInsRealtimeStale || updatesRealtimeStale || quickSyncRealtimeStale;
-  const latestBenUpdate = updates.find((update) => update.type === "ben");
-  const benStatus = getBenStatus(latestBenUpdate);
-  const activeFamily = recentCheckIns(checkIns);
-  const benSightings = useMemo(
-    () =>
-      updates
-        .filter((update) => update.type === "ben")
-        .map((update) => {
-          const point = matchPointForUpdate(update);
-          return point ? { update, point } : null;
-        })
-        .filter((sighting): sighting is BenSighting => Boolean(sighting))
-        .slice(0, 12),
-    [updates],
-  );
-  const latestAthletePoint =
-    benSightings[0]?.point ?? (latestBenUpdate ? matchPointForUpdate(latestBenUpdate) : null);
-  const isFinishHypeReady = shouldShowFinishHype(latestBenUpdate, latestAthletePoint);
-  const finishPoint = mapPoints.find((point) => point.id === "riverfront-plaza-finish");
-  const finishDistanceLabel =
-    finishPoint && latestAthletePoint
-      ? `${Math.max(0.1, distanceKm(latestAthletePoint.coordinates, finishPoint.coordinates)).toFixed(
-          1,
-        )} KM`
-      : "5 KM";
-  const nextTarget = getNextTarget(benStatus.phase);
-  const collapsedEtaLabel = getPhaseEta(benStatus.phase);
-  const collapsedRaceInfo = {
-    etaLabel: collapsedEtaLabel,
-    icon: getPhaseIcon(benStatus.phase),
-    isStale: isRealtimeStale,
-    nextLabel: nextTarget.name,
-    nextMiles: milesLabel(latestAthletePoint, nextTarget),
-    statusText: getCollapsedStatusText(benStatus.phase, collapsedEtaLabel),
-  };
-
-  useEffect(() => {
-    if (isFinishHypeReady && !isFinishHypeDismissed) {
-      setShowFinishHype(true);
-    }
-  }, [isFinishHypeDismissed, isFinishHypeReady]);
-
-  useEffect(() => {
-    setIsAdmin(
-      Boolean(process.env.NEXT_PUBLIC_ADMIN_KEY) &&
-        window.localStorage.getItem("admin_key") === process.env.NEXT_PUBLIC_ADMIN_KEY,
-    );
-  }, []);
-
-  const handleCreateCheckIn = useCallback(
-    async (input: CheckInInput) => {
-      await createCheckIn(input);
-      showToast("Checked in.");
-    },
-    [createCheckIn, showToast],
-  );
-
-  const handleManualPick = useCallback(
-    async (latLng: LatLng) => {
-      if (!manualDraft) {
-        return;
-      }
-
-      try {
-        await createCheckIn({
-          name: manualDraft.name,
-          note: manualDraft.note,
-          lat: latLng.lat,
-          lng: latLng.lng,
-          source: "manual",
-        });
-        setManualDraft(null);
-        showToast("Custom check-in shared.");
-      } catch (error) {
-        showToast(error instanceof Error ? error.message : "Check-in failed.");
-      }
-    },
-    [createCheckIn, manualDraft, showToast],
-  );
-
   const handleQuickBroadcast = useCallback(
-    async (template: (typeof quickBroadcasts)[number]) => {
-      if (window.localStorage.getItem("guest_name") === "Guest") {
-        showToast("Enter the crew PIN to broadcast.");
+    async (template: QuickBroadcastTemplate) => {
+      if (!isConfigured) {
+        setToast({ message: "System not configured", visible: true });
         return;
       }
 
@@ -1061,236 +944,33 @@ export function RaceDayApp() {
       try {
         const author =
           window.localStorage.getItem("crew_name") ||
-          window.localStorage.getItem(savedNameKey) ||
+          window.localStorage.getItem("ironmanben-family-name") ||
           "Family";
         await sendQuickBroadcast(template, author);
-        fetch("/api/notify/meetup", {
-          body: JSON.stringify({
-            newLocation: template.location,
-            reason: template.message,
-          }),
-          headers: { "Content-Type": "application/json" },
-          method: "POST",
-        }).catch(console.error);
-        setActiveDockPanel("crew");
-        setIsInfoSheetExpanded(true);
+        setToast({ message: "Sent to crew", visible: true });
       } catch (error) {
-        showToast(error instanceof Error ? error.message : "Quick Sync failed.");
+        setToast({
+          message: error instanceof Error ? error.message : "Failed to send",
+          visible: true,
+        });
       } finally {
         setSendingQuickKind(null);
       }
     },
-    [sendQuickBroadcast, showToast],
-  );
-  const quickSyncContent = (
-    <section className="rounded-2xl border border-white/10 bg-zinc-950/80 p-3 shadow-2xl backdrop-blur-xl">
-      <p className="text-xs font-black uppercase text-lime-300">Quick Sync</p>
-      <div className="mt-2 grid gap-2">
-        {quickBroadcasts.map((template) => (
-          <button
-            key={template.kind}
-            className={`focus-ring flex items-center justify-between gap-3 rounded-full border px-4 py-3 text-left text-sm font-black transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 ${
-              template.kind === "help_water"
-                ? "border-orange-300/50 bg-orange-500/20 text-white"
-                : "border-lime-300/35 bg-lime-300/10 text-lime-50"
-            }`}
-            disabled={!isConfigured || Boolean(sendingQuickKind)}
-            type="button"
-            onClick={() => handleQuickBroadcast(template)}
-          >
-            <span>{sendingQuickKind === template.kind ? "Sending..." : template.label}</span>
-            {sendingQuickKind === template.kind ? (
-              <span
-                aria-hidden="true"
-                className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-white/25 border-t-lime-300"
-              />
-            ) : null}
-          </button>
-        ))}
-      </div>
-    </section>
+    [isConfigured, sendQuickBroadcast]
   );
 
-  const handleRecenterMap = useCallback(() => {
-    const athlete = latestAthletePoint?.coordinates;
-
-    if (!navigator.geolocation) {
-      setRecenterRequest({
-        id: Date.now(),
-        athlete,
-      });
-      showToast(
-        athlete ? "GPS unavailable. Centered on Ben's last known spot." : "GPS is unavailable.",
-      );
-      return;
-    }
-
-    setIsRecentering(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const user = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
-
-        setRecenterRequest({
-          id: Date.now(),
-          athlete,
-          user,
-        });
-        showToast(
-          athlete
-            ? "Map centered on you and Ben's last known spot."
-            : "No Ben sighting yet. Centered on you.",
-        );
-        setIsRecentering(false);
-      },
-      (error) => {
-        setRecenterRequest({
-          id: Date.now(),
-          athlete,
-        });
-        showToast(
-          athlete
-            ? `${error.message}. Centered on Ben's last known spot.`
-            : error.message || "Location permission was not granted.",
-        );
-        setIsRecentering(false);
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 30000,
-        timeout: 10000,
-      },
-    );
-  }, [latestAthletePoint, showToast]);
-
-  const toggleLayer = (layer: ActiveLayer) => {
+  const handleToggleLayer = useCallback((layer: MapLayer) => {
     setActiveLayers((current) => {
       const next = new Set(current);
-
       if (next.has(layer)) {
         next.delete(layer);
       } else {
         next.add(layer);
       }
-
       return next;
     });
-  };
-
-  const panelContent = (() => {
-    if (activeDockPanel === "updates") {
-      return (
-        <section className="rounded-xl border border-white/10 bg-zinc-950/80 p-3 text-white shadow-2xl backdrop-blur-xl sm:p-4">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-xl font-black">Updates</h2>
-            <button
-              className="focus-ring bg-surge px-4 py-3 text-sm font-black text-white"
-              type="button"
-              onClick={() => setIsPostOpen(true)}
-            >
-              Post
-            </button>
-          </div>
-          <div className="max-h-64 overflow-y-auto pr-1">
-            <UpdateFeed updates={updates} />
-          </div>
-        </section>
-      );
-    }
-
-    if (activeDockPanel === "crew") {
-      return (
-        <section className="rounded-xl border border-white/10 bg-zinc-950/80 p-3 text-white shadow-2xl backdrop-blur-xl sm:p-4">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-black uppercase text-lime-300">Crew</p>
-              <h2 className="text-xl font-black">Family Positions</h2>
-            </div>
-            <button
-              className="focus-ring border border-white/25 bg-white px-4 py-3 text-sm font-black text-zinc-950"
-              type="button"
-              onClick={() => setIsCheckInOpen(true)}
-            >
-              Check In
-            </button>
-          </div>
-
-          <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
-            {activeFamily.slice(0, 8).map((checkIn) => (
-              <article key={checkIn.id} className="rounded-lg bg-white/10 p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="truncate text-sm font-black text-white">{checkIn.name}</p>
-                  <p className="shrink-0 font-mono text-xs font-bold text-white/50">
-                    {formatTime(checkIn.createdAt)}
-                  </p>
-                </div>
-                <p className="mt-1 text-xs font-bold text-white/60">
-                  {checkIn.note || "Checked in on the map"}
-                </p>
-              </article>
-            ))}
-            {activeFamily.length === 0 ? (
-              <p className="rounded-lg bg-white/10 p-3 text-sm font-bold text-white/60">
-                No crew check-ins yet.
-              </p>
-            ) : null}
-          </div>
-
-          {isAdmin ? (
-            <button
-              className="btn-primary mt-3 w-full rounded-xl px-4 py-4 text-base font-bold text-white transition-all active:scale-95"
-              style={{ background: "#1a6e3c" }}
-              type="button"
-              onClick={async () => {
-                if (!window.confirm("Send FINISH LINE alert to all subscribers?")) {
-                  return;
-                }
-
-                const response = await fetch("/api/notify/finish", {
-                  body: JSON.stringify({ finishTime: new Date().toLocaleTimeString() }),
-                  headers: { "Content-Type": "application/json" },
-                  method: "POST",
-                });
-                const data = await response.json();
-                window.alert(`Sent to ${data.sent ?? 0} people`);
-              }}
-            >
-              Ben Finished — Alert Everyone
-            </button>
-          ) : null}
-
-          <div className="mt-4 border-t border-white/10 pt-3">
-            <p className="text-xs font-black uppercase text-white/45">Latest broadcasts</p>
-            <div className="mt-2 space-y-2">
-              {quickSyncMessages.slice(0, 3).map((message) => (
-                <article key={message.id} className="rounded-lg bg-white/10 p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="truncate text-sm font-black text-white">{message.message}</p>
-                    <p className="shrink-0 font-mono text-xs font-bold text-white/50">
-                      {formatTime(message.createdAt)}
-                    </p>
-                  </div>
-                  <p className="mt-1 text-xs font-bold text-white/60">
-                    {message.author}
-                    {message.location ? ` / ${message.location}` : ""}
-                  </p>
-                </article>
-              ))}
-              {quickSyncMessages.length === 0 ? (
-                <p className="rounded-lg bg-white/10 p-3 text-sm font-bold text-white/60">
-                  No broadcasts yet.
-                </p>
-              ) : null}
-            </div>
-          </div>
-        </section>
-      );
-    }
-
-    return null;
-  })();
+  }, []);
 
   if (!isAuthenticated && !isGuest) {
     return (
@@ -1302,288 +982,44 @@ export function RaceDayApp() {
   }
 
   return (
-    <main className="relative min-h-dvh overflow-hidden bg-transparent text-white">
-      <div className="race-map-layer fixed inset-0 z-0">
-        <RaceMap
-          activeLayers={activeLayers}
-          benSightings={benSightings}
-          checkIns={checkIns}
-          isPickingManual={Boolean(manualDraft)}
-          onManualPick={handleManualPick}
-          recenterRequest={recenterRequest}
-        />
+    <div className="min-h-screen bg-background">
+      <StatusBar />
+
+      <div className="pt-[100px] pb-[100px]">
+        {/* Map placeholder - replace with real map */}
+        <div className="h-[35vh] bg-muted/20 border-b border-border relative">
+          <div className="absolute inset-0 flex items-center justify-center text-muted">
+            <div className="text-center">
+              <div className="text-4xl mb-2">🗺️</div>
+              <div className="text-sm font-semibold">Map integration next</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-y-auto px-4 py-6">
+          <MainPanel
+            updates={updates}
+            checkIns={checkIns}
+            onQuickBroadcast={handleQuickBroadcast}
+            sendingQuickKind={sendingQuickKind}
+            isConfigured={isConfigured}
+            activeLayers={activeLayers}
+            onToggleLayer={handleToggleLayer}
+          />
+        </div>
       </div>
 
-      {isInfoSheetExpanded ? (
-        <div className="fixed left-3 top-[4.75rem] z-[1300] flex flex-col gap-1.5">
-          {[
-            { id: "route", label: "Route" },
-            { id: "family", label: "Family" },
-            { id: "parking", label: "Parking" },
-            { id: "mobility", label: "Mobility" },
-          ].map(({ id, label }) => {
-            const layer = id as ActiveLayer;
-            const isActive = activeLayers.has(layer);
-
-            return (
-              <button
-                key={id}
-                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all active:scale-95"
-                style={{
-                  background: isActive ? "rgba(232,75,26,0.3)" : "rgba(9,9,11,0.8)",
-                  border: isActive
-                    ? "1px solid rgba(232,75,26,0.5)"
-                    : "0.5px solid rgba(255,255,255,0.1)",
-                  color: isActive ? "#f07050" : "rgba(255,255,255,0.65)",
-                  backdropFilter: "blur(8px)",
-                }}
-                type="button"
-                onClick={() => toggleLayer(layer)}
-              >
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
-
-      {manualDraft ? (
-        <div
-          className="fixed left-3 right-3 z-[1450] mx-auto max-w-xl rounded-2xl border border-white/10 bg-zinc-950/80 p-4 text-center text-white shadow-2xl backdrop-blur-xl"
-          style={{ bottom: "calc(13rem + env(safe-area-inset-bottom, 0px))" }}
-        >
-          <p className="text-lg font-black">Tap the map</p>
-          <p className="mt-1 text-sm font-bold text-white/70">Custom pin for {manualDraft.name}</p>
-          <button
-            className="focus-ring mt-3 rounded-full border border-white/25 bg-black/40 px-4 py-2 text-sm font-black"
-            type="button"
-            onClick={() => setManualDraft(null)}
-          >
-            Cancel
-          </button>
-        </div>
-      ) : null}
-
-      <DraggableInfoSheet
-        collapsedInfo={collapsedRaceInfo}
-        isExpanded={isInfoSheetExpanded}
-        onExpandedChange={setIsInfoSheetExpanded}
-        quickSync={quickSyncContent}
-        watermarkSrc={raceDayHeroImage.src}
-        timeline={
-          <RaceTimeline
-            latestBenUpdate={latestBenUpdate}
-            showDoneSegments={showDoneSegments}
-            onToggleDoneSegments={() => setShowDoneSegments((current) => !current)}
-          />
-        }
-      >
-        <div
-          className="flex items-center justify-between rounded-2xl border border-white/10 bg-zinc-950/80 px-4 py-3 backdrop-blur-xl"
-        >
-          <div className="min-w-0">
-            <p className="mb-0.5 text-xs font-semibold uppercase tracking-wider text-white/45">
-              Meetup point
-            </p>
-            <p className="truncate text-base font-bold text-white">Memorial Park</p>
-            <p className="mt-0.5 text-xs text-white/50">If separated, go here</p>
-          </div>
-          <a
-            className="flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold text-white/80"
-            href="https://maps.apple.com/?q=Memorial+Park+Jacksonville+FL"
-            rel="noreferrer"
-            style={{ minHeight: "44px" }}
-            target="_blank"
-          >
-            Directions
-          </a>
-        </div>
-
-        <section className="rounded-2xl border border-white/10 bg-zinc-950/80 p-3 shadow-2xl backdrop-blur-xl">
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { id: null, label: "Layers" },
-              { id: "updates", label: "Updates" },
-              { id: "crew", label: "Crew" },
-            ].map((item) => {
-              const isActive = activeDockPanel === item.id;
-
-              return (
-                <button
-                  key={item.label}
-                  className="focus-ring rounded-full border px-3 py-2 text-xs font-black uppercase transition-all active:scale-95"
-                  style={{
-                    background: isActive ? "rgba(232,75,26,0.22)" : "rgba(255,255,255,0.08)",
-                    borderColor: isActive
-                      ? "rgba(232,75,26,0.5)"
-                      : "rgba(255,255,255,0.16)",
-                    color: isActive ? "#f07050" : "rgba(255,255,255,0.72)",
-                  }}
-                  type="button"
-                  onClick={() => setActiveDockPanel(item.id as DockPanel)}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mt-3">
-            {activeDockPanel ? (
-              panelContent
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: "route", label: "Route" },
-                  { id: "family", label: "Family" },
-                  { id: "parking", label: "Parking" },
-                  { id: "mobility", label: "Mobility" },
-                ].map(({ id, label }) => {
-                  const layer = id as ActiveLayer;
-                  const isActive = activeLayers.has(layer);
-
-                  return (
-                    <button
-                      key={id}
-                      className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-black transition-all active:scale-95"
-                      style={{
-                        background: isActive
-                          ? "rgba(232,75,26,0.25)"
-                          : "rgba(255,255,255,0.08)",
-                        border: isActive
-                          ? "1px solid rgba(232,75,26,0.55)"
-                          : "1px solid rgba(255,255,255,0.16)",
-                        color: isActive ? "#f07050" : "rgba(255,255,255,0.72)",
-                      }}
-                      type="button"
-                      onClick={() => toggleLayer(layer)}
-                    >
-                      <span className="h-2 w-2 rounded-full bg-current" />
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </section>
-
-        {process.env.NODE_ENV === "development" && !process.env.NEXT_PUBLIC_SUPABASE_URL ? (
-          <div
-            className="py-1 text-center text-xs"
-            style={{ background: "#3a1a0a", color: "#f07050" }}
-          >
-            Dev: Supabase not configured
-          </div>
-        ) : null}
-      </DraggableInfoSheet>
-
-      <FloatingDock
-        isOffline={isRealtimeStale}
-        isRecentering={isRecentering}
-        onCheckIn={() => setIsCheckInOpen(true)}
-        onRecenter={handleRecenterMap}
-        onSawBen={() => setIsPostOpen(true)}
+      <ActionBar
+        onCheckIn={() => setToast({ message: "Check In sheet coming next", visible: true })}
+        onSawBen={() => setToast({ message: "Saw Ben sheet coming next", visible: true })}
+        onCenterMap={() => setToast({ message: "Map centering coming next", visible: true })}
       />
-
-      {meetupBanner ? (
-        <div className="fixed left-0 right-0 top-[60px] z-[2200] border-b-2 border-lime-300 bg-black px-3 py-3 text-white shadow-2xl">
-          <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-xs font-black uppercase text-lime-300">Meetup Broadcast</p>
-              <p className="mt-1 text-base font-black leading-5">
-                {meetupBanner.author}: {meetupBanner.message}
-              </p>
-              <p className="mt-1 font-mono text-xs font-black text-white/55">
-                {meetupBanner.location ? `${meetupBanner.location} / ` : ""}
-                {formatTime(meetupBanner.createdAt)}
-              </p>
-            </div>
-            <button
-              className="focus-ring shrink-0 border border-white/30 bg-white px-4 py-2 text-sm font-black text-zinc-950 transition-all active:scale-95"
-              type="button"
-              onClick={() => setMeetupBanner(null)}
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {showFinishHype ? (
-        <div className="fixed inset-0 z-[2300] bg-black text-white">
-          <Image
-            aria-hidden="true"
-            alt=""
-            className="object-cover object-center"
-            fill
-            priority
-            sizes="100vw"
-            src={raceDayHeroImage.src}
-          />
-          <div className="absolute inset-0 bg-black/58" />
-          <div className="relative flex min-h-dvh flex-col justify-between p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-            <div className="rounded-xl border-2 border-lime-300 bg-black/86 p-4 shadow-[0_0_28px_rgba(190,242,100,0.35)]">
-              <p className="text-sm font-black uppercase text-lime-300">Finish Line Countdown</p>
-              <h2 className="mt-2 font-mono text-6xl font-black leading-none text-white">
-                {finishDistanceLabel}
-              </h2>
-              <p className="mt-2 text-xl font-black uppercase leading-6 text-white">
-                Ben is inside the final push.
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-white/25 bg-black/82 p-4">
-              <p className="text-3xl font-black leading-tight">Get the crew to the finish.</p>
-              <p className="mt-2 text-base font-bold leading-6 text-white/78">
-                Move to the meetup anchor, keep phones ready, and take the family photo.
-              </p>
-              <button
-                className="focus-ring mt-4 w-full border-2 border-white bg-white px-4 py-3 text-base font-black text-zinc-950 transition-all active:scale-95"
-                type="button"
-                onClick={() => {
-                  setIsFinishHypeDismissed(true);
-                  setShowFinishHype(false);
-                }}
-              >
-                Keep Tracking
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       <Toast
         message={toast.message}
         visible={toast.visible}
         onDismiss={() => setToast((current) => ({ ...current, visible: false }))}
       />
-
-      <CheckInModal
-        isConfigured={isConfigured}
-        isOpen={isCheckInOpen}
-        onClose={() => setIsCheckInOpen(false)}
-        onCreate={handleCreateCheckIn}
-        onManualPick={(draft) => {
-          setManualDraft(draft);
-          setIsCheckInOpen(false);
-          showToast("Tap the map to place your check-in.");
-        }}
-        phoneNumber={window.localStorage.getItem("sms_phone")}
-      />
-
-      <PostUpdateModal
-        isConfigured={isConfigured}
-        isOpen={isPostOpen}
-        onClose={() => setIsPostOpen(false)}
-        onPost={async (input) => {
-          await postUpdate(input);
-          showToast(input.type === "ben" ? "Ben sighting posted." : "Update posted.");
-          setActiveDockPanel("updates");
-          setIsInfoSheetExpanded(true);
-        }}
-      />
-    </main>
+    </div>
   );
 }

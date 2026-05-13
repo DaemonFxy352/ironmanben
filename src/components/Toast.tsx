@@ -14,22 +14,26 @@ export default function Toast({ message, onDismiss, visible }: ToastProps) {
       return;
     }
 
-    const timeout = window.setTimeout(onDismiss, 2500);
+    const timeout = window.setTimeout(onDismiss, 2000);
     return () => window.clearTimeout(timeout);
   }, [onDismiss, visible]);
 
+  if (!visible) {
+    return null;
+  }
+
   return (
     <div
-      className="pointer-events-none fixed left-1/2 top-16 z-[2400] whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold transition-all duration-300"
-      style={{
-        background: "rgba(74,222,128,0.15)",
-        border: "1px solid rgba(74,222,128,0.35)",
-        color: "#4ade80",
-        opacity: visible ? 1 : 0,
-        transform: `translateX(-50%) translateY(${visible ? "0" : "-8px"})`,
-      }}
+      className="pointer-events-none fixed left-1/2 top-20 z-[2400] -translate-x-1/2 animate-in fade-in slide-in-from-top-2 duration-200"
+      role="status"
+      aria-live="polite"
     >
-      {message}
+      <div className="rounded-xl bg-success px-5 py-3 shadow-lg">
+        <div className="flex items-center gap-2 text-base font-bold text-white">
+          <span aria-hidden="true">✓</span>
+          <span>{message}</span>
+        </div>
+      </div>
     </div>
   );
 }
