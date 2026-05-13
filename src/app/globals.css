@@ -960,3 +960,280 @@ body.sheet-open {
   text-align: center;
 }
 
+/* Two destination cards under the hero */
+.destination-section h2 {
+  margin-bottom: 0.5rem;
+}
+
+.destination-cards {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+  margin-top: 0.75rem;
+}
+
+.destination-card {
+  background: #fbfaf6;
+  border: 2px solid #e6e1d4;
+  border-radius: 0.875rem;
+  padding: 1.25rem;
+}
+
+.destination-card-eyebrow {
+  font-size: 0.875rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.375rem;
+  text-transform: uppercase;
+}
+
+.destination-card h3 {
+  font-size: 1.25rem;
+  margin: 0 0 0.5rem;
+}
+
+.destination-card p {
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  margin: 0 0 1rem;
+}
+
+.destination-card-cta {
+  background: #1a1a1a;
+  border: 2px solid #1a1a1a;
+  border-radius: 0.75rem;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 1.0625rem;
+  font-weight: 800;
+  min-height: 56px;
+  padding: 0.875rem 1.25rem;
+  text-decoration: none;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.destination-card-cta:hover {
+  background: #333;
+}
+
+@media (min-width: 720px) {
+  .destination-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Itinerary timeline */
+.itinerary-list {
+  display: grid;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.itinerary-item {
+  background: #fbfaf6;
+  border: 1px solid #e6e1d4;
+  border-left: 6px solid #555;
+  border-radius: 0.75rem;
+  padding: 1rem 1.125rem;
+}
+
+.itinerary-time {
+  font-size: 0.875rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+}
+
+.itinerary-title {
+  font-size: 1.1875rem;
+  margin: 0 0 0.5rem;
+}
+
+.itinerary-body {
+  color: #1a1a1a;
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.itinerary-note {
+  background: #fff5e6;
+  border: 1px solid #f0c890;
+  border-radius: 0.5rem;
+  color: #5d3a00;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  margin-top: 0.75rem;
+  padding: 0.625rem 0.75rem;
+}
+
+/* Real map iframe */
+.real-map-frame {
+  background: #e7eef3;
+  border: 1px solid #e6e1d4;
+  border-radius: 0.75rem;
+  margin-top: 0.75rem;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 520px;
+}
+
+.real-map-frame iframe {
+  border: 0;
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.map-orientation-note {
+  background: #fff5e6;
+  border: 1px solid #f0c890;
+  border-radius: 0.5rem;
+  color: #5d3a00;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  margin-top: 0.75rem;
+  padding: 0.625rem 0.75rem;
+}
+
+.map-pins-title {
+  font-size: 0.9375rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin: 1.25rem 0 0.5rem;
+  text-transform: uppercase;
+}
+
+.map-pins-list {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.map-pin-card {
+  background: #fbfaf6;
+  border: 1px solid #e6e1d4;
+  border-left: 6px solid #555;
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+}
+
+.map-pin-head {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.map-pin-badge {
+  align-items: center;
+  background: #555;
+  border-radius: 999px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 1.125rem;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.map-pin-name {
+  color: #111;
+  font-size: 1.0625rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.map-pin-role {
+  font-size: 0.8125rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.map-pin-desc {
+  color: #333;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  margin: 0.5rem 0 0.625rem;
+}
+
+.map-pin-link {
+  color: #b34a00;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  text-decoration: underline;
+}
+
+.map-course-legend {
+  color: #333;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  margin-top: 1rem;
+}
+
+/* Parking section spacing */
+.parking-section .parking-card-access {
+  color: #1a1a1a;
+  font-size: 0.9375rem;
+  margin-top: 0.25rem;
+}
+
+/* Race-facts accordion */
+.race-facts-accordion {
+  background: #fbfaf6;
+  border: 1px solid #e6e1d4;
+  border-radius: 0.75rem;
+  padding: 0;
+}
+
+.race-facts-accordion[open] {
+  padding-bottom: 1rem;
+}
+
+.race-facts-accordion summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 1.1875rem;
+  font-weight: 800;
+  gap: 0.5rem;
+  justify-content: space-between;
+  list-style: none;
+  min-height: 56px;
+  padding: 1rem 1.125rem;
+}
+
+.race-facts-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.race-facts-summary-title {
+  color: #111;
+}
+
+.race-facts-summary-hint {
+  color: #b34a00;
+  font-size: 0.9375rem;
+  font-weight: 800;
+}
+
+.race-facts-accordion[open] .race-facts-summary-hint::after {
+  content: " (open)";
+  color: #555;
+}
+
+.race-facts-accordion .race-facts-grid {
+  padding: 0 1.125rem;
+}
+
