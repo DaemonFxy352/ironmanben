@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { PlannerMapLoader } from "@/components/PlannerMapLoader";
+import { PlannerMap } from "@/components/PlannerMap";
 import {
   disciplineColors,
   parkingSpots,
@@ -34,6 +34,11 @@ const disciplineWordmark: Record<Discipline, string> = {
 
 export function SupportPlanner() {
   const [focusId, setFocusId] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const sortedSpots = [...recommendedSpots].sort((a, b) => a.priority - b.priority);
 
@@ -77,7 +82,13 @@ export function SupportPlanner() {
           to cheer. <strong>P</strong> markers show parking near cheer spots.
           Use the checkboxes on the legend to hide or show layers.
         </p>
-        <PlannerMapLoader focusId={focusId} />
+        {isMounted ? (
+          <PlannerMap focusId={focusId} />
+        ) : (
+          <div className="planner-map-loading">
+            <p>Loading race map…</p>
+          </div>
+        )}
       </section>
 
       <section className="planner-section" id="spots">
