@@ -181,13 +181,15 @@ export const parkingSpots: ParkingSpot[] = [
 // Approximate course overview polylines. These are NOT athlete GPS — they
 // trace key anchor points so family can see roughly where each discipline goes.
 
-// Swim: Metropolitan Park -> Post St dock (point-to-point, 2.4 mi up St Johns River)
+// Swim: Metropolitan Park -> near Cummer Museum (point-to-point, 2.4 mi in St. Johns River).
+// Transition area is just past the Cummer, at or near Memorial Park.
 export const swimCoursePath: Array<[number, number]> = [
   [30.3234, -81.6378], // Metropolitan Park start
-  [30.32, -81.65],
-  [30.318, -81.665],
-  [30.3155, -81.674],
-  [30.3137, -81.6789], // Post St dock swim exit
+  [30.3232, -81.65],
+  [30.321, -81.658],
+  [30.317, -81.665],
+  [30.318, -81.675],
+  [30.3221, -81.6831], // Cummer Museum swim end
 ];
 
 // Bike: Memorial Park -> south/east toward Ponte Vedra A1A and back (2 laps)

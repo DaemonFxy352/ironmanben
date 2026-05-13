@@ -1072,7 +1072,7 @@ body.sheet-open {
   padding: 0.625rem 0.75rem;
 }
 
-/* Real map iframe */
+/* Real map iframe (legacy class kept for backwards compat) */
 .real-map-frame {
   background: #e7eef3;
   border: 1px solid #e6e1d4;
@@ -1090,6 +1090,70 @@ body.sheet-open {
   display: block;
   height: 100%;
   width: 100%;
+}
+
+/* Corridor map: OSM tile iframe + SVG overlay with routes + pins */
+.corridor-map {
+  margin-top: 0.75rem;
+}
+
+.corridor-map-frame {
+  background: #e7eef3;
+  border: 1px solid #e6e1d4;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 800 / 340;
+  max-height: 520px;
+}
+
+.corridor-map-tiles {
+  border: 0;
+  display: block;
+  height: 100%;
+  width: 100%;
+  /* Lock the tile view so our SVG overlay stays aligned */
+  pointer-events: none;
+}
+
+.corridor-map-overlay {
+  height: 100%;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+.corridor-map-legend {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+
+.corridor-map-legend li {
+  align-items: flex-start;
+  background: #fbfaf6;
+  border: 1px solid #e6e1d4;
+  border-radius: 0.5rem;
+  color: #222;
+  display: flex;
+  font-size: 0.9375rem;
+  gap: 0.625rem;
+  line-height: 1.4;
+  padding: 0.5rem 0.625rem;
+}
+
+.corridor-map-swatch {
+  border-radius: 999px;
+  display: inline-block;
+  flex-shrink: 0;
+  height: 14px;
+  margin-top: 4px;
+  width: 14px;
 }
 
 .map-orientation-note {

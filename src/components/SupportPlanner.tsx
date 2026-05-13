@@ -3,20 +3,86 @@ import { disciplineColors } from "@/data/raceSpots";
 const directionsLink = (query: string) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 
-// Google Maps embed pinned at a search query. No API key required and
-// always renders street tiles in an iframe — cannot get stuck on
-// "Loading race map" in any static-deploy context.
-const mapsEmbedSrc = (query: string, zoom = 13) =>
-  `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=${zoom}&output=embed`;
+// Map corridor: Willow Branch (W) to a touch east of Metropolitan Park (E),
+// Riverfront/Metro Park (N) to Riverside (S). Locked bbox keeps the OSM
+// tile iframe from drifting and lets our SVG overlay align with streets.
+const MAP_BBOX = {
+  west: -81.7,
+  east: -81.63,
+  north: 30.33,
+  south: 30.305,
+};
+
+// OSM export/embed renders a static-looking street tile view of the bbox.
+// We disable pointer events on the iframe (in CSS) so the SVG overlay
+// remains aligned and users navigate via the pin links below.
+const osmEmbedSrc = (() => {
+  const { west, south, east, north } = MAP_BBOX;
+  const bbox = `${west}%2C${south}%2C${east}%2C${north}`;
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik`;
+})();
+
+const VIEW_W = 800;
+const VIEW_H = 340;
+
+const project = (lat: number, lng: number) => {
+  const x =
+    ((lng - MAP_BBOX.west) / (MAP_BBOX.east - MAP_BBOX.west)) * VIEW_W;
+  const y =
+    ((MAP_BBOX.north - lat) / (MAP_BBOX.north - MAP_BBOX.south)) * VIEW_H;
+  return { x, y };
+};
+
+const toPoints = (coords: Array<[number, number]>) =>
+  coords
+    .map(([lat, lng]) => {
+      const { x, y } = project(lat, lng);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+
+// Swim: Metropolitan Park to the Cummer Museum / transition area, following
+// the St. Johns River's curve.
+const SWIM_PATH: Array<[number, number]> = [
+  [30.3234, -81.6378], // Metropolitan Park start
+  [30.3232, -81.65],
+  [30.321, -81.658],
+  [30.317, -81.665],
+  [30.318, -81.675],
+  [30.3221, -81.6831], // Cummer Museum end
+];
+
+// Run: 3-lap loop through Riverside, Willow Branch, downtown, and the Riverwalk.
+// Drawn as a single representative loop polyline that visibly threads
+// Willow Branch and the Riverwalk.
+const RUN_PATH: Array<[number, number]> = [
+  [30.3121, -81.6819], // Memorial Park / T2
+  [30.3115, -81.69],
+  [30.3099, -81.6945], // Willow Branch Park
+  [30.3055, -81.6925],
+  [30.3072, -81.685],
+  [30.3095, -81.677],
+  [30.3142, -81.671],
+  [30.319, -81.6675],
+  [30.3229, -81.6667], // Downtown Riverwalk
+  [30.3254, -81.6591], // Riverfront Plaza finish
+  [30.324, -81.6655],
+  [30.321, -81.672],
+  [30.3175, -81.6775],
+  [30.3148, -81.681],
+  [30.3121, -81.6819], // back to Memorial Park
+];
 
 type KeyLocation = {
   id: string;
   name: string;
   role: string;
   discipline: "swim" | "bike" | "run";
-  badgeIcon: string; // emoji
+  badgeIcon: string;
   badgeLabel: string;
   searchQuery: string;
+  lat: number;
+  lng: number;
 };
 
 const KEY_LOCATIONS: KeyLocation[] = [
@@ -25,64 +91,81 @@ const KEY_LOCATIONS: KeyLocation[] = [
     name: "Cummer Art Museum lot",
     role: "Swim morning parking · close to water and transition",
     discipline: "swim",
-    badgeIcon: "🅿",
+    badgeIcon: "P",
     badgeLabel: "Park here for swim",
-    searchQuery: "Cummer Museum of Art and Gardens, 829 Riverside Ave, Jacksonville, FL 32204",
+    searchQuery:
+      "Cummer Museum of Art and Gardens, 829 Riverside Ave, Jacksonville, FL 32204",
+    lat: 30.3221,
+    lng: -81.6831,
   },
   {
     id: "metro-park",
     name: "Metropolitan Park",
     role: "Swim start · 7:30 AM age-group wave",
     discipline: "swim",
-    badgeIcon: "🏊",
+    badgeIcon: "S",
     badgeLabel: "Swim start",
     searchQuery: "Metropolitan Park, 64 Gator Bowl Blvd, Jacksonville, FL 32202",
+    lat: 30.3234,
+    lng: -81.6378,
   },
   {
     id: "transition",
     name: "Transition area (near Cummer / Memorial Park)",
     role: "Swim exit + bike start · short walk from Cummer lot",
     discipline: "swim",
-    badgeIcon: "🔁",
+    badgeIcon: "T",
     badgeLabel: "Transition",
     searchQuery: "Memorial Park, 1620 Riverside Ave, Jacksonville, FL 32204",
+    lat: 30.3121,
+    lng: -81.6819,
   },
   {
     id: "willow-branch",
     name: "Willow Branch Park",
     role: "Run HQ · Ben passes 3 times · shade, easy parking",
     discipline: "run",
-    badgeIcon: "⭐",
+    badgeIcon: "★",
     badgeLabel: "Run HQ",
     searchQuery: "Willow Branch Park, 2870 Park St, Jacksonville, FL 32205",
+    lat: 30.3099,
+    lng: -81.6945,
   },
   {
     id: "memorial-park",
     name: "Memorial Park",
     role: "Optional run cheer stop · transition-adjacent",
     discipline: "run",
-    badgeIcon: "📍",
+    badgeIcon: "M",
     badgeLabel: "Run cheer (optional)",
     searchQuery: "Memorial Park, 1620 Riverside Ave, Jacksonville, FL 32204",
+    lat: 30.3121,
+    lng: -81.6819,
   },
   {
     id: "riverfront-plaza",
     name: "Riverfront Plaza",
     role: "Finish line · IRONMAN Village · easy seated viewing",
     discipline: "run",
-    badgeIcon: "🏁",
+    badgeIcon: "F",
     badgeLabel: "Finish line",
     searchQuery: "Riverfront Plaza, 2 Independent Dr, Jacksonville, FL 32202",
+    lat: 30.3254,
+    lng: -81.6591,
   },
 ];
+
+const SWIM_FOOD_WARNING =
+  "There are no cafes or restaurants along the riverside walking path where you will be watching the swim. This path runs through Brooklyn and into Riverside along the water. Riverside has restaurants but they are not on or near this walking trail. Eat beforehand or grab something before you head to the water.";
 
 const PARKING_OPTIONS = [
   {
     name: "Cummer Art Museum surface lot",
     bestFor: "Swim morning",
-    note: "Flat, close to the water and the transition area. This is the lot Cat recommends for the morning — do not use the downtown garages for the swim, the walk is too long.",
+    note: "Flat, close to the water and the transition area just past the museum. This is the lot Cat recommends for the morning — do not use the downtown garages for the swim, the walk is too long.",
     accessibility: "Most accessible · flat walk",
-    query: "Cummer Museum of Art and Gardens, 829 Riverside Ave, Jacksonville, FL 32204",
+    query:
+      "Cummer Museum of Art and Gardens, 829 Riverside Ave, Jacksonville, FL 32204",
   },
   {
     name: "Willow Branch Park area (street parking)",
@@ -140,26 +223,26 @@ const ITINERARY: ItineraryItem[] = [
   {
     time: "7:00 AM",
     title: "Park at the Cummer Art Museum lot",
-    body: "This is the best parking for the swim morning. It is close to the water and close to the transition area. Do not use the downtown garages for the swim — the walk is too long.",
-    note: "FOOD NOTE: The Brooklyn area near the swim start has no cafes — it is office buildings. Eat beforehand or grab something before you head down. Riverside has restaurants but they are not reachable from the riverside walking trail along the swim course.",
+    body: "This is the best parking for the swim morning. The transition area is just past the museum, near Memorial Park, and the riverside walking path is right there. Do not use the downtown garages for the swim — the walk is too long.",
+    note: `FOOD NOTE: ${SWIM_FOOD_WARNING}`,
     accent: "swim",
   },
   {
     time: "~7:30 AM",
     title: "Watch the swim start",
-    body: "Ben starts at Metropolitan Park with the age-group wave. He is a strong swimmer. You will likely see him once from a distance. Don't over-plan the morning around this.",
+    body: "Ben starts at Metropolitan Park, across the St. Johns River. From the riverside walking path through Brooklyn and Riverside you can see the swim unfold on the water. He is a strong swimmer — you will likely see him once from a distance. Don't over-plan the morning around this.",
     accent: "swim",
   },
   {
     time: "~8:00 AM",
     title: "Catch him coming out of the water",
-    body: "The transition area is near the Cummer Museum. Worth seeing if you're already parked nearby.",
+    body: "The swim ends near the Cummer Museum of Art and Gardens. The transition area is just past the Cummer, at or near Memorial Park. Worth seeing if you're already parked nearby.",
     accent: "swim",
   },
   {
     time: "~8:30 AM – Midday",
     title: "Break while he bikes",
-    body: "Ben bikes 112 miles toward Ponte Vedra and back, twice. This takes several hours. Get lunch. Rest. You do not need to chase the bike.",
+    body: "Ben bikes 112 miles southeast toward Ponte Vedra Beach and back, twice. This takes several hours. Get lunch. Rest. You do not need to chase the bike.",
     accent: "bike",
   },
   {
@@ -182,6 +265,226 @@ const accentColor: Record<ItineraryItem["accent"], string> = {
   run: disciplineColors.run,
   info: "#555",
 };
+
+function CorridorMap() {
+  const swimPoints = toPoints(SWIM_PATH);
+  const runPoints = toPoints(RUN_PATH);
+
+  // Bike: arrow leaving the transition area heading southeast off-frame.
+  const t = project(30.3121, -81.6819);
+  const bikeStart = { x: t.x + 6, y: t.y + 6 };
+  const bikeEnd = { x: VIEW_W - 10, y: VIEW_H - 10 };
+
+  return (
+    <div className="corridor-map">
+      <div className="corridor-map-frame">
+        <iframe
+          title="OpenStreetMap of Brooklyn, Riverside, and downtown Jacksonville race corridor"
+          src={osmEmbedSrc}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          className="corridor-map-tiles"
+        />
+        <svg
+          aria-label="Race-day routes and pins"
+          className="corridor-map-overlay"
+          preserveAspectRatio="none"
+          role="img"
+          viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <marker
+              id="bikeArrow"
+              markerHeight="10"
+              markerWidth="10"
+              orient="auto"
+              refX="6"
+              refY="5"
+              viewBox="0 0 10 10"
+            >
+              <path d="M0,0 L10,5 L0,10 z" fill={disciplineColors.bike} />
+            </marker>
+          </defs>
+
+          {/* Swim — blue line along the St. Johns River */}
+          <polyline
+            fill="none"
+            points={swimPoints}
+            stroke="#ffffff"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="10"
+            opacity="0.85"
+          />
+          <polyline
+            fill="none"
+            points={swimPoints}
+            stroke={disciplineColors.swim}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="6"
+          />
+
+          {/* Run — orange 3-lap loop (drawn as one loop for clarity) */}
+          <polyline
+            fill="none"
+            points={runPoints}
+            stroke="#ffffff"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="11"
+            opacity="0.85"
+          />
+          <polyline
+            fill="none"
+            points={runPoints}
+            stroke={disciplineColors.run}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="7"
+          />
+          {/* Lap badge near Willow Branch to communicate "3 laps" */}
+          {(() => {
+            const w = project(30.3099, -81.6945);
+            return (
+              <g>
+                <circle
+                  cx={w.x - 22}
+                  cy={w.y + 22}
+                  fill="#ffffff"
+                  r="14"
+                  stroke={disciplineColors.run}
+                  strokeWidth="3"
+                />
+                <text
+                  fill={disciplineColors.run}
+                  fontSize="14"
+                  fontWeight="900"
+                  textAnchor="middle"
+                  x={w.x - 22}
+                  y={w.y + 27}
+                >
+                  3×
+                </text>
+              </g>
+            );
+          })()}
+
+          {/* Bike — purple arrow heading southeast off-frame */}
+          <line
+            stroke="#ffffff"
+            strokeLinecap="round"
+            strokeWidth="12"
+            opacity="0.85"
+            x1={bikeStart.x}
+            x2={bikeEnd.x}
+            y1={bikeStart.y}
+            y2={bikeEnd.y}
+          />
+          <line
+            markerEnd="url(#bikeArrow)"
+            stroke={disciplineColors.bike}
+            strokeDasharray="14 8"
+            strokeLinecap="round"
+            strokeWidth="6"
+            x1={bikeStart.x}
+            x2={bikeEnd.x - 16}
+            y1={bikeStart.y}
+            y2={bikeEnd.y - 16}
+          />
+          <g>
+            <rect
+              fill="#ffffff"
+              height="22"
+              rx="5"
+              stroke={disciplineColors.bike}
+              strokeWidth="2"
+              width="170"
+              x={VIEW_W - 200}
+              y={VIEW_H - 60}
+            />
+            <text
+              fill={disciplineColors.bike}
+              fontSize="13"
+              fontWeight="800"
+              x={VIEW_W - 192}
+              y={VIEW_H - 44}
+            >
+              Bike → Ponte Vedra (×2)
+            </text>
+          </g>
+
+          {/* Pins */}
+          {KEY_LOCATIONS.map((loc) => {
+            const { x, y } = project(loc.lat, loc.lng);
+            const color = disciplineColors[loc.discipline];
+            return (
+              <g key={loc.id}>
+                <circle
+                  cx={x}
+                  cy={y}
+                  fill={color}
+                  r="11"
+                  stroke="#ffffff"
+                  strokeWidth="3"
+                />
+                <text
+                  fill="#ffffff"
+                  fontSize="12"
+                  fontWeight="900"
+                  textAnchor="middle"
+                  x={x}
+                  y={y + 4}
+                >
+                  {loc.badgeIcon}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      <ul className="corridor-map-legend">
+        <li>
+          <span
+            aria-hidden="true"
+            className="corridor-map-swatch"
+            style={{ background: disciplineColors.swim }}
+          />
+          <span>
+            <strong>Swim</strong> — blue line along the St. Johns River from
+            Metropolitan Park to the Cummer Museum (transition is just past
+            the museum, at Memorial Park).
+          </span>
+        </li>
+        <li>
+          <span
+            aria-hidden="true"
+            className="corridor-map-swatch"
+            style={{ background: disciplineColors.bike }}
+          />
+          <span>
+            <strong>Bike</strong> — purple arrow southeast toward Ponte Vedra
+            Beach and back, twice. (Course continues off the map.)
+          </span>
+        </li>
+        <li>
+          <span
+            aria-hidden="true"
+            className="corridor-map-swatch"
+            style={{ background: disciplineColors.run }}
+          />
+          <span>
+            <strong>Run</strong> — orange 3-lap loop through Riverside, Willow
+            Branch, downtown, and the Riverwalk. Willow Branch sits right on
+            the loop — the best place to stand.
+          </span>
+        </li>
+      </ul>
+    </div>
+  );
+}
 
 export function SupportPlanner() {
   return (
@@ -272,29 +575,24 @@ export function SupportPlanner() {
       <section className="planner-section" id="map">
         <h2>Map of the race</h2>
         <p className="planner-section-lead">
-          Real Jacksonville streets. Pinch to zoom or tap a pin name below to
-          open it in Google Maps.
+          Brooklyn / Riverside / downtown Jacksonville corridor. The colored
+          lines show where Ben goes: blue swim along the river, purple bike
+          heading southeast, orange run loop through the neighborhood. The
+          orange loop is the one to watch — it threads right through Willow
+          Branch.
         </p>
 
-        <div className="real-map-frame">
-          <iframe
-            title="Jacksonville race-day map"
-            src={mapsEmbedSrc("Willow Branch Park, Jacksonville, FL", 12)}
-            loading="lazy"
-            allowFullScreen
-            referrerPolicy="no-referrer-when-downgrade"
-          />
-        </div>
+        <CorridorMap />
 
         <p className="map-orientation-note">
-          <strong>Brooklyn area note:</strong> there are no cafes near the swim
-          start — eat beforehand.
+          <strong>Food note for the swim:</strong> {SWIM_FOOD_WARNING}
         </p>
 
         <p className="map-pins-title">Pins for the day</p>
         <ul className="map-pins-list">
           {KEY_LOCATIONS.map((loc) => {
             const color = disciplineColors[loc.discipline];
+            const isTransition = loc.id === "transition";
             return (
               <li key={loc.id} className="map-pin-card" style={{ borderColor: color }}>
                 <div className="map-pin-head">
@@ -311,6 +609,13 @@ export function SupportPlanner() {
                   </div>
                 </div>
                 <p className="map-pin-desc">{loc.role}</p>
+                {isTransition ? (
+                  <p className="map-pin-desc">
+                    The swim ends near the Cummer Museum of Art and Gardens.
+                    The transition area is just past the Cummer, at or near
+                    Memorial Park.
+                  </p>
+                ) : null}
                 <a
                   className="map-pin-link"
                   href={directionsLink(loc.searchQuery)}
@@ -327,9 +632,10 @@ export function SupportPlanner() {
         <p className="map-course-legend">
           <strong>Course colors:</strong>{" "}
           <span style={{ color: disciplineColors.swim }}>● Swim</span> from
-          Metropolitan Park to the transition near Cummer ·{" "}
+          Metropolitan Park down the St. Johns River to the Cummer Museum /
+          Memorial Park transition ·{" "}
           <span style={{ color: disciplineColors.bike }}>● Bike</span> out
-          toward Ponte Vedra and back, twice ·{" "}
+          toward Ponte Vedra Beach and back, twice ·{" "}
           <span style={{ color: disciplineColors.run }}>● Run</span> 3 laps
           through Riverside, Willow Branch, downtown, and the Riverwalk.
         </p>
@@ -393,8 +699,9 @@ export function SupportPlanner() {
               <p className="race-fact-big">2.4 miles</p>
               <p className="race-fact-line">Starts at 7:30 AM (age-group start)</p>
               <p className="race-fact-line">
-                Point-to-point in the St Johns River, from Metropolitan Park up
-                to the transition area near the Cummer Museum.
+                Point-to-point in the St. Johns River, from Metropolitan Park
+                down to the Cummer Museum, with the transition just past the
+                museum at Memorial Park.
               </p>
             </article>
 
