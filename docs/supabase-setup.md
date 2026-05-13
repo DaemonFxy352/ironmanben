@@ -1,6 +1,6 @@
 # Supabase Race-Day Setup
 
-This app uses Supabase directly from the browser for temporary public race-day coordination. There is no login, API route, or backend server in this repo.
+This app uses Supabase directly from the browser for temporary race-day coordination. Phone OTP login is handled by Supabase Auth; there is no API route or backend server in this repo.
 
 ## 1. Create Tables and Policies
 
@@ -10,9 +10,14 @@ The migration creates:
 
 - `check_ins`
 - `race_updates`
+- `messages`
 - public anonymous `select` and `insert` policies
-- realtime publication entries for both tables
+- authenticated `select` and `insert` policies for phone OTP users
+- realtime publication entries for check-ins and race updates
 - the `help` update type used by the "Need Help" quick update
+- Quick Sync broadcast storage in the `messages` table
+
+Enable Supabase Auth phone login in the Supabase dashboard and configure an SMS provider before race day.
 
 ## 2. Environment Variables
 
@@ -36,14 +41,14 @@ Use these settings:
 
 ## 4. Realtime Behavior
 
-The browser loads recent rows from `check_ins` and `race_updates`, then subscribes to Supabase Realtime `postgres_changes` insert events for each table. New check-ins and updates are rendered optimistically immediately, then reconciled when Supabase confirms the inserted row.
+The browser loads recent rows from `check_ins`, `race_updates`, and `messages`, then subscribes to Supabase Realtime `postgres_changes` insert events for check-ins and race updates. Quick Sync meetup calls insert a `messages` row and also use Supabase Broadcast so active users see a toast immediately.
 
 ## 5. Race-Day Security Model
 
 This is intentionally public and temporary:
 
-- Anyone with the URL can read check-ins and updates.
-- Anyone with the URL can post check-ins and updates.
+- Phone-authenticated users can read and post check-ins, updates, and Quick Sync messages.
+- Anonymous access remains available in the policies for pre-race setup and fallback use.
 - Deletes and updates are not granted to the public anonymous role.
 
 Do not use this for private medical, child-location, or sensitive security information.
@@ -53,7 +58,7 @@ Do not use this for private medical, child-location, or sensitive security infor
 To clear event data:
 
 ```sql
-truncate table public.check_ins, public.race_updates;
+truncate table public.check_ins, public.race_updates, public.messages;
 ```
 
 To stop new public posts while preserving read access:
@@ -61,6 +66,7 @@ To stop new public posts while preserving read access:
 ```sql
 drop policy if exists "Public race-day check-ins are insertable" on public.check_ins;
 drop policy if exists "Public race-day updates are insertable" on public.race_updates;
+drop policy if exists "Race-day messages are insertable" on public.messages;
 ```
 
 To fully shut down public access:
@@ -70,4 +76,6 @@ drop policy if exists "Public race-day check-ins are readable" on public.check_i
 drop policy if exists "Public race-day check-ins are insertable" on public.check_ins;
 drop policy if exists "Public race-day updates are readable" on public.race_updates;
 drop policy if exists "Public race-day updates are insertable" on public.race_updates;
+drop policy if exists "Race-day messages are readable" on public.messages;
+drop policy if exists "Race-day messages are insertable" on public.messages;
 ```

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import BottomSheet from "@/components/BottomSheet";
+import { CHEER_LOCATIONS } from "@/lib/raceLocations";
 import type { RaceUpdateInput, RaceUpdateType } from "@/types/raceUpdate";
 
 type PostUpdateModalProps = {
@@ -10,7 +12,8 @@ type PostUpdateModalProps = {
   onPost: (input: RaceUpdateInput) => Promise<void>;
 };
 
-const savedNameKey = "ironmanben-family-name";
+const crewNameKey = "crew_name";
+const legacyNameKey = "ironmanben-family-name";
 const updateTypes: Array<{ value: RaceUpdateType; label: string }> = [
   { value: "ben", label: "Saw Ben" },
   { value: "parking", label: "Parking" },
@@ -20,11 +23,28 @@ const updateTypes: Array<{ value: RaceUpdateType; label: string }> = [
   { value: "general", label: "General" },
 ];
 
+function savedCrewName() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return window.localStorage.getItem(crewNameKey) || window.localStorage.getItem(legacyNameKey) || "";
+}
+
+function rememberCrewName(name: string) {
+  window.localStorage.setItem(crewNameKey, name);
+  window.localStorage.setItem(legacyNameKey, name);
+}
+
+function typeLabel(type: RaceUpdateType) {
+  return updateTypes.find((item) => item.value === type)?.label ?? "Update";
+}
+
 export function PostUpdateModal({ isConfigured, isOpen, onClose, onPost }: PostUpdateModalProps) {
-  const [author, setAuthor] = useState("");
-  const [message, setMessage] = useState("");
-  const [location, setLocation] = useState("");
-  const [type, setType] = useState<RaceUpdateType>("general");
+  const [author, setAuthor] = useState(savedCrewName);
+  const [note, setNote] = useState("");
+  const [selected, setSelected] = useState("");
+  const [type, setType] = useState<RaceUpdateType>("ben");
   const [status, setStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,39 +53,39 @@ export function PostUpdateModal({ isConfigured, isOpen, onClose, onPost }: PostU
       return;
     }
 
-    setAuthor(window.localStorage.getItem(savedNameKey) ?? "");
-    setMessage("");
-    setLocation("");
+    setAuthor(savedCrewName());
+    setNote("");
+    setSelected("");
     setType("ben");
     setStatus(null);
     setIsSubmitting(false);
   }, [isOpen]);
 
-  if (!isOpen) {
-    return null;
-  }
-
   const canSubmit =
-    isConfigured && author.trim().length > 0 && message.trim().length > 0 && !isSubmitting;
+    isConfigured && author.trim().length > 0 && type.length > 0 && selected.length > 0 && !isSubmitting;
 
   async function submit() {
     if (!canSubmit) {
       return;
     }
 
-    window.localStorage.setItem(savedNameKey, author.trim());
+    const cleanAuthor = author.trim();
+    const cleanNote = note.trim();
+    const label = typeLabel(type);
+
     setIsSubmitting(true);
     setStatus("Posting...");
 
     try {
+      rememberCrewName(cleanAuthor);
       await onPost({
-        author: author.trim(),
-        message: message.trim(),
-        location: location.trim(),
+        author: cleanAuthor,
+        message: cleanNote ? `${label}: ${selected}. ${cleanNote}` : `${label}: ${selected}`,
+        location: selected,
         type,
       });
       setStatus("Posted.");
-      window.setTimeout(onClose, 500);
+      onClose();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Update failed.");
     } finally {
@@ -74,93 +94,99 @@ export function PostUpdateModal({ isConfigured, isOpen, onClose, onPost }: PostU
   }
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-end bg-black/55 p-3 backdrop-blur-sm sm:items-center sm:justify-center">
-      <section className="w-full rounded-lg border border-white/10 bg-ink/[0.88] p-4 text-white shadow-2xl backdrop-blur-lg sm:max-w-md sm:p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-black uppercase text-surge">Live update</p>
-            <h2 className="mt-1 text-3xl font-black">Post Update</h2>
-          </div>
-          <button
-            className="focus-ring rounded-md border border-white/20 px-3 py-2 text-sm font-black text-white"
-            type="button"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-        </div>
-
-        {!isConfigured ? (
-          <p className="mt-3 rounded-md bg-surge/20 p-3 text-sm font-bold text-white">
-            Supabase is not configured yet. Add the environment variables before race day.
-          </p>
-        ) : null}
-
-        <label className="mt-4 block text-sm font-black text-white" htmlFor="update-author">
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title={type === "ben" ? "Saw Ben!" : "Post Update"}
+      subtitle="Tap the category and location"
+    >
+      <div className="mb-3">
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-white/35">
           Name
         </label>
         <input
-          id="update-author"
-          className="mt-2 w-full rounded-md border border-white/15 bg-white px-3 py-3 text-base font-bold text-ink outline-none focus:border-river"
-          autoComplete="name"
-          maxLength={48}
-          placeholder="Dad"
+          className="w-full rounded-xl border border-white/15 bg-white/[0.07] p-3 text-sm text-white outline-none focus:border-white/35"
+          style={{ minHeight: "48px" }}
+          type="text"
           value={author}
           onChange={(event) => setAuthor(event.target.value)}
         />
+      </div>
 
-        <label className="mt-4 block text-sm font-black text-white" htmlFor="update-message">
-          Message
-        </label>
-        <textarea
-          id="update-message"
-          className="mt-2 min-h-24 w-full rounded-md border border-white/15 bg-white px-3 py-3 text-base text-ink outline-none focus:border-river"
-          maxLength={180}
-          placeholder="Ben just passed Five Points."
-          value={message}
-          onChange={(event) => setMessage(event.target.value)}
-        />
-
-        <label className="mt-4 block text-sm font-black text-white" htmlFor="update-location">
-          Location <span className="font-semibold text-white/55">optional</span>
-        </label>
-        <input
-          id="update-location"
-          className="mt-2 w-full rounded-md border border-white/15 bg-white px-3 py-3 text-base text-ink outline-none focus:border-river"
-          maxLength={80}
-          placeholder="Five Points"
-          value={location}
-          onChange={(event) => setLocation(event.target.value)}
-        />
-
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {updateTypes.map((item) => (
-            <button
-              key={item.value}
-              className={`focus-ring min-h-12 rounded-md border px-3 py-3 text-sm font-black ${
+      <div className="mb-3 grid grid-cols-3 gap-2">
+        {updateTypes.map((item) => (
+          <button
+            key={item.value}
+            className="px-3 py-3 text-sm font-black transition-all active:scale-95"
+            style={{
+              background:
+                type === item.value ? "rgba(232,75,26,0.25)" : "rgba(255,255,255,0.06)",
+              border:
                 type === item.value
-                  ? "border-surge bg-surge text-white"
-                  : "border-white/15 bg-white/10 text-white"
-              }`}
-              type="button"
-              onClick={() => setType(item.value)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+                  ? "1px solid rgba(232,75,26,0.6)"
+                  : "0.5px solid rgba(255,255,255,0.12)",
+              color: type === item.value ? "#f07050" : "rgba(255,255,255,0.72)",
+            }}
+            type="button"
+            onClick={() => setType(item.value)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
 
-        <button
-          className="focus-ring mt-5 min-h-14 w-full rounded-md bg-river px-4 py-3 text-base font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!canSubmit}
-          type="button"
-          onClick={submit}
-        >
-          Post update
-        </button>
+      {type ? (
+        <>
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            {CHEER_LOCATIONS.filter((location) => location.name !== "Other").map((location) => (
+              <button
+                key={location.name}
+                className="text-left transition-all active:scale-95"
+                style={{
+                  minHeight: "64px",
+                  padding: "1rem",
+                  borderRadius: "0.75rem",
+                  background:
+                    selected === location.name ? "rgba(232,75,26,0.25)" : "rgba(232,75,26,0.08)",
+                  border:
+                    selected === location.name
+                      ? "1px solid rgba(232,75,26,0.6)"
+                      : "0.5px solid rgba(232,75,26,0.2)",
+                }}
+                type="button"
+                onClick={() => setSelected(location.name)}
+              >
+                <span className="block text-sm font-semibold text-white">{location.name}</span>
+                <span className="mt-0.5 block text-xs text-white/40">{location.description}</span>
+              </button>
+            ))}
+          </div>
 
-        {status ? <p className="mt-3 text-sm font-bold text-white/80">{status}</p> : null}
-      </section>
-    </div>
+          <input
+            className="mb-3 w-full rounded-xl border border-white/15 bg-white/[0.07] p-3 text-sm text-white outline-none focus:border-white/35"
+            placeholder="Add a note (optional)"
+            style={{ minHeight: "48px" }}
+            type="text"
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+          />
+        </>
+      ) : null}
+
+      <button
+        className="btn-primary w-full rounded-xl px-4 py-4 text-base font-bold text-white transition-opacity active:scale-95"
+        disabled={!canSubmit}
+        style={{
+          background: "#e84b1a",
+          opacity: canSubmit ? 1 : 0.4,
+        }}
+        type="button"
+        onClick={submit}
+      >
+        {isSubmitting ? "Posting..." : type === "ben" ? "Post sighting" : "Post update"}
+      </button>
+
+      {status ? <p className="mt-3 text-sm font-bold text-white/70">{status}</p> : null}
+    </BottomSheet>
   );
 }

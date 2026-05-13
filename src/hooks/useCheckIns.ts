@@ -37,6 +37,7 @@ export function useCheckIns() {
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(Boolean(supabase));
+  const [isRealtimeStale, setIsRealtimeStale] = useState(false);
 
   useEffect(() => {
     if (!supabase) {
@@ -46,6 +47,23 @@ export function useCheckIns() {
 
     const client = supabase;
     let isMounted = true;
+    let staleTimeout: number | null = null;
+
+    function clearStaleTimeout() {
+      if (staleTimeout) {
+        window.clearTimeout(staleTimeout);
+        staleTimeout = null;
+      }
+    }
+
+    function markDisconnected() {
+      clearStaleTimeout();
+      staleTimeout = window.setTimeout(() => {
+        if (isMounted) {
+          setIsRealtimeStale(true);
+        }
+      }, 10000);
+    }
 
     async function loadCheckIns() {
       const { data, error: loadError } = await client
@@ -97,6 +115,15 @@ export function useCheckIns() {
         },
       )
       .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          clearStaleTimeout();
+          setIsRealtimeStale(false);
+        }
+
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          markDisconnected();
+        }
+
         if (status === "CHANNEL_ERROR") {
           setError("Realtime check-ins are not connected.");
         }
@@ -104,6 +131,7 @@ export function useCheckIns() {
 
     return () => {
       isMounted = false;
+      clearStaleTimeout();
       client.removeChannel(channel);
     };
   }, [supabase]);
@@ -151,5 +179,6 @@ export function useCheckIns() {
     error,
     isConfigured: Boolean(supabase),
     isLoading,
+    isRealtimeStale,
   };
 }

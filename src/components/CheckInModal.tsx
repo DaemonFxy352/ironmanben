@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import BottomSheet from "@/components/BottomSheet";
+import { CHEER_LOCATIONS, getRaceLocation } from "@/lib/raceLocations";
 import type { CheckInInput } from "@/types/checkIn";
 
 type ManualDraft = {
@@ -16,17 +18,25 @@ type CheckInModalProps = {
   onManualPick: (draft: ManualDraft) => void;
 };
 
-const savedNameKey = "ironmanben-family-name";
+const crewNameKey = "crew_name";
+const legacyNameKey = "ironmanben-family-name";
 
-export function CheckInModal({
-  isConfigured,
-  isOpen,
-  onClose,
-  onCreate,
-  onManualPick,
-}: CheckInModalProps) {
-  const [name, setName] = useState("");
-  const [note, setNote] = useState("");
+function savedCrewName() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return window.localStorage.getItem(crewNameKey) || window.localStorage.getItem(legacyNameKey) || "";
+}
+
+function rememberCrewName(name: string) {
+  window.localStorage.setItem(crewNameKey, name);
+  window.localStorage.setItem(legacyNameKey, name);
+}
+
+export function CheckInModal({ isConfigured, isOpen, onClose, onCreate }: CheckInModalProps) {
+  const [name, setName] = useState(savedCrewName);
+  const [selectedLoc, setSelectedLoc] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -35,153 +45,105 @@ export function CheckInModal({
       return;
     }
 
-    setName(window.localStorage.getItem(savedNameKey) ?? "");
-    setNote("");
+    setName(savedCrewName());
+    setSelectedLoc("");
     setStatus(null);
     setIsSubmitting(false);
   }, [isOpen]);
 
-  if (!isOpen) {
-    return null;
-  }
-
   const trimmedName = name.trim();
-  const trimmedNote = note.trim();
-  const canSubmit = isConfigured && trimmedName.length > 0 && !isSubmitting;
+  const selected = selectedLoc ? getRaceLocation(selectedLoc) : null;
+  const canSubmit =
+    isConfigured &&
+    trimmedName.length > 0 &&
+    Boolean(selected?.coordinates) &&
+    !isSubmitting;
 
-  function rememberName() {
-    window.localStorage.setItem(savedNameKey, trimmedName);
-  }
-
-  async function useGps() {
-    if (!canSubmit) {
+  async function submit() {
+    if (!canSubmit || !selected?.coordinates) {
       return;
     }
 
-    if (!navigator.geolocation) {
-      setStatus("Location is not available in this browser.");
-      return;
-    }
-
-    rememberName();
     setIsSubmitting(true);
-    setStatus("Getting your location...");
+    setStatus("Checking in...");
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          await onCreate({
-            name: trimmedName,
-            note: trimmedNote,
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            source: "gps",
-          });
-          setStatus("Checked in.");
-          window.setTimeout(onClose, 500);
-        } catch (error) {
-          setStatus(error instanceof Error ? error.message : "Check-in failed.");
-        } finally {
-          setIsSubmitting(false);
-        }
-      },
-      (error) => {
-        setStatus(error.message || "Location permission was not granted.");
-        setIsSubmitting(false);
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 30000,
-        timeout: 12000,
-      },
-    );
-  }
-
-  function startManualPick() {
-    if (!canSubmit) {
-      return;
+    try {
+      rememberCrewName(trimmedName);
+      await onCreate({
+        name: trimmedName,
+        note: selected.name,
+        lat: selected.coordinates.lat,
+        lng: selected.coordinates.lng,
+        source: "manual",
+      });
+      setStatus("Checked in.");
+      onClose();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Check-in failed.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    rememberName();
-    onManualPick({
-      name: trimmedName,
-      note: trimmedNote,
-    });
   }
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-end bg-black/55 p-3 backdrop-blur-sm sm:items-center sm:justify-center">
-      <section className="w-full rounded-lg border border-white/10 bg-ink/[0.88] p-4 text-white shadow-2xl backdrop-blur-lg sm:max-w-md sm:p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-black uppercase text-surge">Family check-in</p>
-            <h2 className="mt-1 text-3xl font-black">Check In Here</h2>
-          </div>
-          <button
-            className="focus-ring rounded-md border border-white/20 px-3 py-2 text-sm font-black text-white"
-            type="button"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-        </div>
-
-        <p className="mt-3 rounded-md bg-white/10 p-3 text-sm font-bold leading-6 text-white/80">
-          Share your current spot with the family.
-        </p>
-
-        {!isConfigured ? (
-          <p className="mt-3 rounded-md bg-surge/20 p-3 text-sm font-bold text-white">
-            Supabase is not configured yet. Add the environment variables before race day.
-          </p>
-        ) : null}
-
-        <label className="mt-4 block text-sm font-black text-white" htmlFor="checkin-name">
-          Name
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title="I'm at..."
+      subtitle="Let the crew know where you are"
+    >
+      <div className="mb-3">
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-white/35">
+          Your name
         </label>
         <input
-          id="checkin-name"
-          className="mt-2 w-full rounded-md border border-white/15 bg-white px-3 py-3 text-base font-bold text-ink outline-none focus:border-river"
-          autoComplete="name"
-          maxLength={48}
-          placeholder="Aunt Lisa"
+          className="w-full rounded-xl border border-white/15 bg-white/[0.07] p-3 text-sm text-white outline-none focus:border-white/35"
+          style={{ minHeight: "48px" }}
+          type="text"
           value={name}
           onChange={(event) => setName(event.target.value)}
         />
+      </div>
 
-        <label className="mt-4 block text-sm font-black text-white" htmlFor="checkin-note">
-          Note <span className="font-semibold text-white/55">optional</span>
-        </label>
-        <textarea
-          id="checkin-note"
-          className="mt-2 min-h-20 w-full rounded-md border border-white/15 bg-white px-3 py-3 text-base text-ink outline-none focus:border-river"
-          maxLength={140}
-          placeholder="By the big oak near Memorial Park"
-          value={note}
-          onChange={(event) => setNote(event.target.value)}
-        />
-
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+      <div className="mb-3 grid grid-cols-2 gap-2">
+        {CHEER_LOCATIONS.filter((location) => location.name !== "Other").map((location) => (
           <button
-            className="focus-ring min-h-16 rounded-md bg-river px-4 py-4 text-lg font-black text-white disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2"
-            disabled={!canSubmit}
+            key={location.name}
+            className="text-left transition-all active:scale-95"
+            style={{
+              minHeight: "64px",
+              padding: "1rem",
+              borderRadius: "0.75rem",
+              background:
+                selectedLoc === location.name ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.05)",
+              border:
+                selectedLoc === location.name
+                  ? "1px solid rgba(255,255,255,0.3)"
+                  : "0.5px solid rgba(255,255,255,0.1)",
+            }}
             type="button"
-            onClick={useGps}
+            onClick={() => setSelectedLoc(location.name)}
           >
-            Check In Here
+            <span className="block text-sm font-semibold text-white">{location.name}</span>
+            <span className="mt-0.5 block text-xs text-white/40">{location.description}</span>
           </button>
-          <button
-            className="focus-ring min-h-12 rounded-md border border-white/15 bg-white/10 px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2"
-            disabled={!canSubmit}
-            type="button"
-            onClick={startManualPick}
-          >
-            Use custom location
-          </button>
-        </div>
+        ))}
+      </div>
 
-        {status ? <p className="mt-3 text-sm font-bold text-white/80">{status}</p> : null}
-      </section>
-    </div>
+      <button
+        className="btn-primary w-full rounded-xl px-4 py-4 text-base font-bold text-white transition-opacity active:scale-95"
+        disabled={!canSubmit}
+        style={{
+          background: "#1a6e3c",
+          opacity: canSubmit ? 1 : 0.4,
+        }}
+        type="button"
+        onClick={submit}
+      >
+        {isSubmitting ? "Checking in..." : "Check in here"}
+      </button>
+
+      {status ? <p className="mt-3 text-sm font-bold text-white/70">{status}</p> : null}
+    </BottomSheet>
   );
 }

@@ -60,6 +60,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      messages: {
+        Row: {
+          id: string;
+          author: string;
+          message: string;
+          location: string | null;
+          kind: "finish" | "memorial_park" | "lunch" | "help_water";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          author: string;
+          message: string;
+          location?: string | null;
+          kind: "finish" | "memorial_park" | "lunch" | "help_water";
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          author?: string;
+          message?: string;
+          location?: string | null;
+          kind?: "finish" | "memorial_park" | "lunch" | "help_water";
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

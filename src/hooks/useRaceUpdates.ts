@@ -35,6 +35,7 @@ export function useRaceUpdates() {
   const [updates, setUpdates] = useState<RaceUpdate[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(Boolean(supabase));
+  const [isRealtimeStale, setIsRealtimeStale] = useState(false);
 
   useEffect(() => {
     if (!supabase) {
@@ -44,6 +45,23 @@ export function useRaceUpdates() {
 
     const client = supabase;
     let isMounted = true;
+    let staleTimeout: number | null = null;
+
+    function clearStaleTimeout() {
+      if (staleTimeout) {
+        window.clearTimeout(staleTimeout);
+        staleTimeout = null;
+      }
+    }
+
+    function markDisconnected() {
+      clearStaleTimeout();
+      staleTimeout = window.setTimeout(() => {
+        if (isMounted) {
+          setIsRealtimeStale(true);
+        }
+      }, 10000);
+    }
 
     async function loadUpdates() {
       const { data, error: loadError } = await client
@@ -90,6 +108,15 @@ export function useRaceUpdates() {
         },
       )
       .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          clearStaleTimeout();
+          setIsRealtimeStale(false);
+        }
+
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          markDisconnected();
+        }
+
         if (status === "CHANNEL_ERROR") {
           setError("Realtime updates are not connected.");
         }
@@ -97,6 +124,7 @@ export function useRaceUpdates() {
 
     return () => {
       isMounted = false;
+      clearStaleTimeout();
       client.removeChannel(channel);
     };
   }, [supabase]);
@@ -141,6 +169,7 @@ export function useRaceUpdates() {
     error,
     isConfigured: Boolean(supabase),
     isLoading,
+    isRealtimeStale,
     postUpdate,
     updates,
   };

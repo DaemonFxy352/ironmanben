@@ -38,7 +38,7 @@ Vercel should use the standard Next.js build output. Do not set a custom Output 
 
 ## Supabase Setup
 
-Run `supabase/migrations/0001_race_day_coordination.sql` in the Supabase SQL editor, then add the environment variables from `.env.example`. Full setup and reset notes are in `docs/supabase-setup.md`.
+Run the SQL files in `supabase/migrations/` in order in the Supabase SQL editor, then add the environment variables from `.env.example`. Enable Supabase phone OTP auth with an SMS provider for family login. Full setup and reset notes are in `docs/supabase-setup.md`.
 
 ## Updating the Hero Image
 
