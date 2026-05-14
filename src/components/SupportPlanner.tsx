@@ -1,77 +1,33 @@
+import type { ReactNode } from "react";
+
 import { disciplineColors } from "@/data/raceSpots";
 
 const directionsLink = (query: string) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 
-// Map corridor: Willow Branch (W) to a touch east of Metropolitan Park (E),
-// Riverfront/Metro Park (N) to Riverside (S). Locked bbox keeps the OSM
-// tile iframe from drifting and lets our SVG overlay align with streets.
-const MAP_BBOX = {
-  west: -81.7,
-  east: -81.63,
-  north: 30.33,
-  south: 30.305,
-};
-
-// OSM export/embed renders a static-looking street tile view of the bbox.
-// We disable pointer events on the iframe (in CSS) so the SVG overlay
-// remains aligned and users navigate via the pin links below.
-const osmEmbedSrc = (() => {
-  const { west, south, east, north } = MAP_BBOX;
-  const bbox = `${west}%2C${south}%2C${east}%2C${north}`;
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik`;
-})();
+// Schematic orientation map. Coordinates are SVG positions (not lat/lng)
+// because we are deliberately NOT drawing a precise turn-by-turn course —
+// we don't have the verified GPS lines, and pretending we do led to the
+// orange run loop being drawn over the river. Instead this is a labeled
+// "spectator orientation" diagram: a stylized river, the south-bank
+// neighborhoods where the run loops, the downtown finish, and the six
+// pins family/friends actually need to navigate to.
 
 const VIEW_W = 800;
-const VIEW_H = 340;
+const VIEW_H = 420;
 
-const project = (lat: number, lng: number) => {
-  const x =
-    ((lng - MAP_BBOX.west) / (MAP_BBOX.east - MAP_BBOX.west)) * VIEW_W;
-  const y =
-    ((MAP_BBOX.north - lat) / (MAP_BBOX.north - MAP_BBOX.south)) * VIEW_H;
-  return { x, y };
+// Pin positions on the schematic (not lat/lng). Laid out west→east the
+// way Jacksonville actually sits: Willow Branch is far west, Metropolitan
+// Park is far east across the river, finish is east-downtown.
+type PinXY = { x: number; y: number };
+const PINS: Record<string, PinXY> = {
+  willowBranch: { x: 110, y: 290 },
+  memorial: { x: 285, y: 250 },
+  transition: { x: 320, y: 240 },
+  cummer: { x: 360, y: 215 },
+  riverfront: { x: 690, y: 165 },
+  metroPark: { x: 720, y: 70 },
 };
-
-const toPoints = (coords: Array<[number, number]>) =>
-  coords
-    .map(([lat, lng]) => {
-      const { x, y } = project(lat, lng);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-
-// Swim: Metropolitan Park to the Cummer Museum / transition area, following
-// the St. Johns River's curve.
-const SWIM_PATH: Array<[number, number]> = [
-  [30.3234, -81.6378], // Metropolitan Park start
-  [30.3232, -81.65],
-  [30.321, -81.658],
-  [30.317, -81.665],
-  [30.318, -81.675],
-  [30.3221, -81.6831], // Cummer Museum end
-];
-
-// Run: 3-lap loop through Riverside, Willow Branch, downtown, and the Riverwalk.
-// Drawn as a single representative loop polyline that visibly threads
-// Willow Branch and the Riverwalk.
-const RUN_PATH: Array<[number, number]> = [
-  [30.3121, -81.6819], // Memorial Park / T2
-  [30.3115, -81.69],
-  [30.3099, -81.6945], // Willow Branch Park
-  [30.3055, -81.6925],
-  [30.3072, -81.685],
-  [30.3095, -81.677],
-  [30.3142, -81.671],
-  [30.319, -81.6675],
-  [30.3229, -81.6667], // Downtown Riverwalk
-  [30.3254, -81.6591], // Riverfront Plaza finish
-  [30.324, -81.6655],
-  [30.321, -81.672],
-  [30.3175, -81.6775],
-  [30.3148, -81.681],
-  [30.3121, -81.6819], // back to Memorial Park
-];
 
 type KeyLocation = {
   id: string;
@@ -266,36 +222,41 @@ const accentColor: Record<ItineraryItem["accent"], string> = {
   info: "#555",
 };
 
-function CorridorMap() {
-  const swimPoints = toPoints(SWIM_PATH);
-  const runPoints = toPoints(RUN_PATH);
+type PinKey = keyof typeof PINS;
 
-  // Bike: arrow leaving the transition area heading southeast off-frame.
-  const t = project(30.3121, -81.6819);
-  const bikeStart = { x: t.x + 6, y: t.y + 6 };
-  const bikeEnd = { x: VIEW_W - 10, y: VIEW_H - 10 };
+const PIN_BY_ID: Record<string, PinKey> = {
+  "willow-branch": "willowBranch",
+  "memorial-park": "memorial",
+  transition: "transition",
+  cummer: "cummer",
+  "riverfront-plaza": "riverfront",
+  "metro-park": "metroPark",
+};
+
+function CorridorMap() {
+  const runColor = disciplineColors.run;
+  const swimColor = disciplineColors.swim;
+  const bikeColor = disciplineColors.bike;
 
   return (
     <div className="corridor-map">
+      <p className="corridor-map-caption">
+        <strong>Orientation map — not a turn-by-turn course map.</strong> The
+        exact streets aren&apos;t shown. Use this to find <em>where</em> to go;
+        use Google Maps for driving directions.
+      </p>
+
       <div className="corridor-map-frame">
-        <iframe
-          title="OpenStreetMap of Brooklyn, Riverside, and downtown Jacksonville race corridor"
-          src={osmEmbedSrc}
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          className="corridor-map-tiles"
-        />
         <svg
-          aria-label="Race-day routes and pins"
-          className="corridor-map-overlay"
-          preserveAspectRatio="none"
+          aria-label="Schematic orientation map of the IRONMAN Jacksonville spectator corridor"
+          className="corridor-map-svg"
           role="img"
           viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
           xmlns="http://www.w3.org/2000/svg"
         >
           <defs>
             <marker
-              id="bikeArrow"
+              id="arrowSwim"
               markerHeight="10"
               markerWidth="10"
               orient="auto"
@@ -303,145 +264,249 @@ function CorridorMap() {
               refY="5"
               viewBox="0 0 10 10"
             >
-              <path d="M0,0 L10,5 L0,10 z" fill={disciplineColors.bike} />
+              <path d="M0,0 L10,5 L0,10 z" fill={swimColor} />
+            </marker>
+            <marker
+              id="arrowBike"
+              markerHeight="10"
+              markerWidth="10"
+              orient="auto"
+              refX="6"
+              refY="5"
+              viewBox="0 0 10 10"
+            >
+              <path d="M0,0 L10,5 L0,10 z" fill={bikeColor} />
+            </marker>
+            <marker
+              id="arrowRun"
+              markerHeight="9"
+              markerWidth="9"
+              orient="auto"
+              refX="5"
+              refY="4.5"
+              viewBox="0 0 9 9"
+            >
+              <path d="M0,0 L9,4.5 L0,9 z" fill={runColor} />
             </marker>
           </defs>
 
-          {/* Swim — blue line along the St. Johns River */}
-          <polyline
-            fill="none"
-            points={swimPoints}
-            stroke="#ffffff"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="10"
-            opacity="0.85"
-          />
-          <polyline
-            fill="none"
-            points={swimPoints}
-            stroke={disciplineColors.swim}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="6"
-          />
+          {/* Background land (south-bank neighborhoods + downtown) */}
+          <rect x="0" y="0" width={VIEW_W} height={VIEW_H} fill="#f3efe4" />
 
-          {/* Run — orange 3-lap loop (drawn as one loop for clarity) */}
-          <polyline
-            fill="none"
-            points={runPoints}
-            stroke="#ffffff"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="11"
-            opacity="0.85"
+          {/* River band — curves across the frame. Swim happens INSIDE this. */}
+          <path
+            d={`M -20 30 C 180 90, 420 220, 820 140 L 820 200 C 420 280, 180 150, -20 90 Z`}
+            fill="#cfe4f2"
+            stroke="#a9c8df"
+            strokeWidth="2"
           />
-          <polyline
-            fill="none"
-            points={runPoints}
-            stroke={disciplineColors.run}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="7"
-          />
-          {/* Lap badge near Willow Branch to communicate "3 laps" */}
-          {(() => {
-            const w = project(30.3099, -81.6945);
-            return (
-              <g>
-                <circle
-                  cx={w.x - 22}
-                  cy={w.y + 22}
-                  fill="#ffffff"
-                  r="14"
-                  stroke={disciplineColors.run}
-                  strokeWidth="3"
-                />
-                <text
-                  fill={disciplineColors.run}
-                  fontSize="14"
-                  fontWeight="900"
-                  textAnchor="middle"
-                  x={w.x - 22}
-                  y={w.y + 27}
-                >
-                  3×
-                </text>
-              </g>
-            );
-          })()}
+          <text
+            fill="#3a6a8a"
+            fontSize="14"
+            fontStyle="italic"
+            fontWeight="700"
+            x="430"
+            y="195"
+          >
+            St. Johns River
+          </text>
 
-          {/* Bike — purple arrow heading southeast off-frame */}
-          <line
-            stroke="#ffffff"
-            strokeLinecap="round"
-            strokeWidth="12"
-            opacity="0.85"
-            x1={bikeStart.x}
-            x2={bikeEnd.x}
-            y1={bikeStart.y}
-            y2={bikeEnd.y}
+          {/* South-bank neighborhood labels (no precise streets) */}
+          <text fill="#6a5a2a" fontSize="13" fontWeight="800" x="60" y="350">
+            RIVERSIDE / BROOKLYN
+          </text>
+          <text fill="#6a5a2a" fontSize="12" x="60" y="368">
+            (where the run loops)
+          </text>
+          <text fill="#6a5a2a" fontSize="13" fontWeight="800" x="560" y="350">
+            DOWNTOWN JACKSONVILLE
+          </text>
+          <text fill="#6a5a2a" fontSize="12" x="560" y="368">
+            (finish line + Riverwalk)
+          </text>
+
+          {/* RUN — drawn as a highlighted ZONE, not a polyline. This is the
+              spectator neighborhood; we don't pretend to know the exact streets. */}
+          <ellipse
+            cx="230"
+            cy="295"
+            rx="230"
+            ry="55"
+            fill={runColor}
+            opacity="0.16"
+            stroke={runColor}
+            strokeDasharray="6 5"
+            strokeWidth="2.5"
           />
-          <line
-            markerEnd="url(#bikeArrow)"
-            stroke={disciplineColors.bike}
-            strokeDasharray="14 8"
-            strokeLinecap="round"
-            strokeWidth="6"
-            x1={bikeStart.x}
-            x2={bikeEnd.x - 16}
-            y1={bikeStart.y}
-            y2={bikeEnd.y - 16}
+          {/* Curved arrows around the run zone to show "it loops, 3 times". */}
+          <path
+            d="M 70 295 a 160 38 0 0 1 320 0"
+            fill="none"
+            markerEnd="url(#arrowRun)"
+            opacity="0.75"
+            stroke={runColor}
+            strokeWidth="3"
           />
+          <path
+            d="M 390 295 a 160 38 0 0 1 -320 0"
+            fill="none"
+            markerEnd="url(#arrowRun)"
+            opacity="0.75"
+            stroke={runColor}
+            strokeWidth="3"
+          />
+          {/* Big "3x" badge anchored near Willow Branch. */}
+          <g>
+            <circle
+              cx={PINS.willowBranch.x - 35}
+              cy={PINS.willowBranch.y + 36}
+              fill="#ffffff"
+              r="20"
+              stroke={runColor}
+              strokeWidth="3.5"
+            />
+            <text
+              fill={runColor}
+              fontSize="18"
+              fontWeight="900"
+              textAnchor="middle"
+              x={PINS.willowBranch.x - 35}
+              y={PINS.willowBranch.y + 43}
+            >
+              3×
+            </text>
+          </g>
+          {/* Run-zone label — clearly the run area, not a route. */}
           <g>
             <rect
               fill="#ffffff"
-              height="22"
-              rx="5"
-              stroke={disciplineColors.bike}
-              strokeWidth="2"
-              width="170"
-              x={VIEW_W - 200}
-              y={VIEW_H - 60}
+              height="26"
+              rx="6"
+              stroke={runColor}
+              strokeWidth="2.5"
+              width="230"
+              x="115"
+              y="248"
             />
             <text
-              fill={disciplineColors.bike}
-              fontSize="13"
-              fontWeight="800"
-              x={VIEW_W - 192}
-              y={VIEW_H - 44}
+              fill={runColor}
+              fontSize="14"
+              fontWeight="900"
+              x="125"
+              y="266"
             >
-              Bike → Ponte Vedra (×2)
+              RUN LOOPS THROUGH HERE (3×)
             </text>
           </g>
 
-          {/* Pins */}
+          {/* SWIM — arrow that stays INSIDE the river band, east → west,
+              from Metropolitan Park toward Cummer/Memorial. */}
+          <path
+            d={`M ${PINS.metroPark.x - 6} ${PINS.metroPark.y + 18}
+                C ${PINS.metroPark.x - 80} ${PINS.metroPark.y + 60},
+                  ${PINS.cummer.x + 120} ${PINS.cummer.y - 30},
+                  ${PINS.cummer.x + 18} ${PINS.cummer.y - 6}`}
+            fill="none"
+            markerEnd="url(#arrowSwim)"
+            stroke="#ffffff"
+            strokeLinecap="round"
+            strokeWidth="11"
+            opacity="0.95"
+          />
+          <path
+            d={`M ${PINS.metroPark.x - 6} ${PINS.metroPark.y + 18}
+                C ${PINS.metroPark.x - 80} ${PINS.metroPark.y + 60},
+                  ${PINS.cummer.x + 120} ${PINS.cummer.y - 30},
+                  ${PINS.cummer.x + 18} ${PINS.cummer.y - 6}`}
+            fill="none"
+            markerEnd="url(#arrowSwim)"
+            stroke={swimColor}
+            strokeLinecap="round"
+            strokeWidth="6"
+          />
+          <text
+            fill={swimColor}
+            fontSize="13"
+            fontWeight="800"
+            x="430"
+            y="135"
+          >
+            SWIM (in the river)
+          </text>
+
+          {/* BIKE — subtle, de-emphasized. Small dashed arrow leaving SE. */}
+          <line
+            opacity="0.85"
+            stroke={bikeColor}
+            strokeDasharray="6 6"
+            strokeLinecap="round"
+            strokeWidth="3"
+            x1={PINS.transition.x + 12}
+            x2={VIEW_W - 60}
+            y1={PINS.transition.y + 30}
+            y2={VIEW_H - 30}
+            markerEnd="url(#arrowBike)"
+          />
+          <text
+            fill={bikeColor}
+            fontSize="11"
+            fontWeight="700"
+            x={VIEW_W - 220}
+            y={VIEW_H - 30}
+          >
+            Bike → Ponte Vedra (off map, ×2)
+          </text>
+
+          {/* Pins. Willow Branch is intentionally bigger and labeled bold. */}
           {KEY_LOCATIONS.map((loc) => {
-            const { x, y } = project(loc.lat, loc.lng);
+            const pinKey = PIN_BY_ID[loc.id];
+            if (!pinKey) return null;
+            const { x, y } = PINS[pinKey];
             const color = disciplineColors[loc.discipline];
+            const isHQ = loc.id === "willow-branch";
+            const r = isHQ ? 18 : 11;
             return (
               <g key={loc.id}>
+                {isHQ ? (
+                  <circle
+                    cx={x}
+                    cy={y}
+                    fill="none"
+                    r={r + 7}
+                    stroke={color}
+                    strokeOpacity="0.45"
+                    strokeWidth="3"
+                  />
+                ) : null}
                 <circle
                   cx={x}
                   cy={y}
                   fill={color}
-                  r="11"
+                  r={r}
                   stroke="#ffffff"
-                  strokeWidth="3"
+                  strokeWidth={isHQ ? 4 : 3}
                 />
                 <text
                   fill="#ffffff"
-                  fontSize="12"
+                  fontSize={isHQ ? 16 : 12}
                   fontWeight="900"
                   textAnchor="middle"
                   x={x}
-                  y={y + 4}
+                  y={y + (isHQ ? 6 : 4)}
                 >
                   {loc.badgeIcon}
                 </text>
               </g>
             );
           })}
+
+          {/* Pin labels (placed to avoid overlap with the river band). */}
+          <PinLabel anchor="below" pin={PINS.willowBranch}>Willow Branch · RUN HQ</PinLabel>
+          <PinLabel anchor="above" pin={PINS.metroPark}>Metropolitan Park · swim start</PinLabel>
+          <PinLabel anchor="above" pin={PINS.cummer}>Cummer lot</PinLabel>
+          <PinLabel anchor="below" pin={PINS.memorial}>Memorial Park</PinLabel>
+          <PinLabel anchor="rightBelow" pin={PINS.transition}>Transition</PinLabel>
+          <PinLabel anchor="above" pin={PINS.riverfront}>Riverfront Plaza · FINISH</PinLabel>
         </svg>
       </div>
 
@@ -450,39 +515,70 @@ function CorridorMap() {
           <span
             aria-hidden="true"
             className="corridor-map-swatch"
-            style={{ background: disciplineColors.swim }}
+            style={{ background: runColor }}
           />
           <span>
-            <strong>Swim</strong> — blue line along the St. Johns River from
-            Metropolitan Park to the Cummer Museum (transition is just past
-            the museum, at Memorial Park).
+            <strong>Run zone (orange)</strong> — the run laps through this
+            Riverside / Brooklyn neighborhood three times.{" "}
+            <strong>Willow Branch Park is the spot to plant yourself.</strong>{" "}
+            The shaded oval is the area, not a street-by-street route.
           </span>
         </li>
         <li>
           <span
             aria-hidden="true"
             className="corridor-map-swatch"
-            style={{ background: disciplineColors.bike }}
+            style={{ background: swimColor }}
           />
           <span>
-            <strong>Bike</strong> — purple arrow southeast toward Ponte Vedra
-            Beach and back, twice. (Course continues off the map.)
+            <strong>Swim (blue)</strong> — in the St. Johns River, from
+            Metropolitan Park down to the Cummer / Memorial Park area.
           </span>
         </li>
         <li>
           <span
             aria-hidden="true"
             className="corridor-map-swatch"
-            style={{ background: disciplineColors.run }}
+            style={{ background: bikeColor }}
           />
           <span>
-            <strong>Run</strong> — orange 3-lap loop through Riverside, Willow
-            Branch, downtown, and the Riverwalk. Willow Branch sits right on
-            the loop — the best place to stand.
+            <strong>Bike (purple)</strong> — heads southeast toward Ponte Vedra
+            Beach (off this map) and back, twice.{" "}
+            <em>Not worth chasing — use the bike hours for lunch and rest.</em>
           </span>
         </li>
       </ul>
     </div>
+  );
+}
+
+type PinLabelProps = {
+  pin: PinXY;
+  anchor: "above" | "below" | "rightBelow";
+  children: ReactNode;
+};
+
+function PinLabel({ pin, anchor, children }: PinLabelProps) {
+  const dy =
+    anchor === "above" ? -20 : anchor === "rightBelow" ? 30 : 32;
+  const textAnchor: "middle" | "start" =
+    anchor === "rightBelow" ? "start" : "middle";
+  const dx = anchor === "rightBelow" ? 18 : 0;
+  return (
+    <text
+      fill="#1a1a1a"
+      fontSize="12.5"
+      fontWeight="800"
+      textAnchor={textAnchor}
+      x={pin.x + dx}
+      y={pin.y + dy}
+    >
+      <tspan
+        style={{ paintOrder: "stroke", stroke: "#ffffff", strokeWidth: 4 }}
+      >
+        {children}
+      </tspan>
+    </text>
   );
 }
 
@@ -573,13 +669,14 @@ export function SupportPlanner() {
       </section>
 
       <section className="planner-section" id="map">
-        <h2>Map of the race</h2>
+        <h2>Spectator orientation map</h2>
         <p className="planner-section-lead">
-          Brooklyn / Riverside / downtown Jacksonville corridor. The colored
-          lines show where Ben goes: blue swim along the river, purple bike
-          heading southeast, orange run loop through the neighborhood. The
-          orange loop is the one to watch — it threads right through Willow
-          Branch.
+          A simple diagram of the race corridor — <strong>not</strong> a
+          turn-by-turn course map. The orange shaded area is where the{" "}
+          <strong>run loops past three times</strong>, with{" "}
+          <strong>Willow Branch Park</strong> as the spot to plant yourself.
+          The blue arrow shows the swim in the river. The bike heads off the
+          map southeast and isn&apos;t worth chasing.
         </p>
 
         <CorridorMap />
@@ -630,14 +727,10 @@ export function SupportPlanner() {
         </ul>
 
         <p className="map-course-legend">
-          <strong>Course colors:</strong>{" "}
-          <span style={{ color: disciplineColors.swim }}>● Swim</span> from
-          Metropolitan Park down the St. Johns River to the Cummer Museum /
-          Memorial Park transition ·{" "}
-          <span style={{ color: disciplineColors.bike }}>● Bike</span> out
-          toward Ponte Vedra Beach and back, twice ·{" "}
-          <span style={{ color: disciplineColors.run }}>● Run</span> 3 laps
-          through Riverside, Willow Branch, downtown, and the Riverwalk.
+          <strong>About this map:</strong> it shows the right{" "}
+          <em>neighborhoods</em> and the right pins, not the exact streets
+          Ben runs on. For driving directions, tap any pin&apos;s &ldquo;Open
+          in Google Maps&rdquo; link above.
         </p>
       </section>
 
