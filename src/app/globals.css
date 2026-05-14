@@ -329,3 +329,1050 @@ body.sheet-open {
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* ============================================================
+   Planner / family-friendly view (light theme)
+   ============================================================ */
+
+.planner-page {
+  background: #fbfaf6;
+  color: #1a1a1a;
+  min-height: 100dvh;
+  padding: 1.25rem 1rem 4rem;
+}
+
+.planner-page * {
+  box-sizing: border-box;
+}
+
+.planner-page h1,
+.planner-page h2,
+.planner-page h3 {
+  color: #111;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.planner-page h1 {
+  font-size: clamp(1.875rem, 5vw + 1rem, 2.75rem);
+  line-height: 1.15;
+}
+
+.planner-page h2 {
+  font-size: clamp(1.375rem, 2vw + 1rem, 1.875rem);
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
+}
+
+.planner-page h3 {
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+.planner-page p {
+  color: #333;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.planner-hero {
+  background: #ffffff;
+  border: 1px solid #e6e1d4;
+  border-radius: 1rem;
+  margin: 0 auto 1.5rem;
+  max-width: 64rem;
+  padding: 1.5rem 1.25rem;
+  text-align: left;
+}
+
+.planner-eyebrow {
+  color: #b34a00;
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+}
+
+.planner-lead {
+  font-size: 1.125rem;
+  line-height: 1.55;
+  margin-top: 0.75rem;
+}
+
+.planner-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.planner-cta,
+.spot-card-button {
+  background: #1a1a1a;
+  border: 2px solid #1a1a1a;
+  border-radius: 0.625rem;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 1rem;
+  font-weight: 700;
+  min-height: 48px;
+  padding: 0.75rem 1.125rem;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.planner-cta:hover,
+.spot-card-button:hover {
+  background: #333;
+}
+
+.planner-cta-secondary,
+.spot-card-button:not(.spot-card-button-primary) {
+  background: #ffffff;
+  color: #1a1a1a;
+}
+
+.planner-cta-secondary:hover,
+.spot-card-button:not(.spot-card-button-primary):hover {
+  background: #f1ede2;
+  color: #1a1a1a;
+}
+
+.spot-card-button-primary {
+  background: #b34a00;
+  border-color: #b34a00;
+}
+
+.spot-card-button-primary:hover {
+  background: #8c3a00;
+}
+
+.planner-section {
+  background: #ffffff;
+  border: 1px solid #e6e1d4;
+  border-radius: 1rem;
+  margin: 0 auto 1.5rem;
+  max-width: 64rem;
+  padding: 1.5rem 1.25rem;
+}
+
+.planner-section-lead {
+  margin-bottom: 1rem;
+}
+
+.planner-key-idea {
+  background: #fff5e6;
+  border-color: #f0c890;
+}
+
+.planner-key-idea h2 {
+  color: #8c3a00;
+}
+
+.planner-map-wrapper {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+.planner-map {
+  background: #e7eef3;
+  border-radius: 0.75rem;
+  height: 70vh;
+  max-height: 540px;
+  min-height: 360px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.planner-map-loading {
+  align-items: center;
+  background: #e7eef3;
+  border-radius: 0.75rem;
+  color: #333;
+  display: flex;
+  font-size: 1rem;
+  font-weight: 700;
+  height: 360px;
+  justify-content: center;
+}
+
+.planner-legend {
+  background: #fbfaf6;
+  border: 1px solid #e6e1d4;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.planner-legend-title {
+  color: #111;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  margin: 0 0 0.625rem;
+  text-transform: none;
+}
+
+.planner-legend-rows {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.planner-legend-row {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  font-size: 1rem;
+  font-weight: 600;
+  gap: 0.625rem;
+  min-height: 44px;
+}
+
+.planner-legend-row-static {
+  cursor: default;
+}
+
+.planner-legend-row input[type="checkbox"] {
+  height: 22px;
+  width: 22px;
+}
+
+.planner-legend-swatch {
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  display: inline-block;
+  height: 14px;
+  width: 28px;
+}
+
+.planner-legend-parking {
+  align-items: center;
+  background: #455a64;
+  border-radius: 6px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 0.875rem;
+  font-weight: 900;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
+}
+
+.planner-legend-star {
+  color: #b34a00;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.planner-legend-text {
+  color: #1a1a1a;
+}
+
+/* Star and parking markers */
+.planner-star-marker-wrapper {
+  background: transparent;
+  border: 0;
+}
+
+.planner-star-marker {
+  display: inline-block;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+  font-size: 2.25rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  width: 44px;
+}
+
+.planner-parking-marker-wrapper {
+  background: transparent;
+  border: 0;
+}
+
+.planner-parking-marker {
+  align-items: center;
+  background: #455a64;
+  border: 2px solid #ffffff;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  color: #ffffff;
+  display: flex;
+  font-size: 0.9375rem;
+  font-weight: 900;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+/* Planner popups (light) */
+.planner-popup .leaflet-popup-content-wrapper {
+  border-radius: 10px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.18);
+}
+
+.planner-popup .leaflet-popup-content {
+  margin: 0;
+}
+
+.planner-popup-card {
+  color: #1a1a1a;
+  padding: 14px 16px 16px;
+}
+
+.planner-popup-card h3 {
+  font-size: 1.0625rem;
+  font-weight: 800;
+  line-height: 1.25;
+  margin: 0 0 0.25rem;
+}
+
+.planner-popup-card p {
+  color: #333;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  margin: 6px 0 0;
+}
+
+.planner-popup-card .planner-popup-type {
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+}
+
+.planner-popup-card dl {
+  border-top: 1px solid #e6e1d4;
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 10px;
+  padding-top: 10px;
+}
+
+.planner-popup-card dt {
+  color: #1a1a1a;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.planner-popup-card dd {
+  color: #333;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.planner-popup-link {
+  background: #1a1a1a;
+  border-radius: 8px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  margin-top: 4px;
+  min-height: 44px;
+  padding: 0.625rem 1rem;
+  text-decoration: none;
+}
+
+.planner-popup-link:hover {
+  background: #333;
+}
+
+/* Spot cards */
+.spot-list {
+  display: grid;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.spot-card {
+  background: #fbfaf6;
+  border: 1px solid #e6e1d4;
+  border-radius: 0.875rem;
+  padding: 1.25rem;
+}
+
+.spot-card-header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  margin-bottom: 0.5rem;
+}
+
+.spot-card-badge {
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 0.25rem 0.75rem;
+  text-transform: uppercase;
+}
+
+.spot-card-priority {
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+}
+
+.spot-card-why {
+  margin-bottom: 0.75rem;
+}
+
+.spot-card-facts {
+  border-top: 1px solid #e6e1d4;
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+  padding-top: 0.75rem;
+}
+
+.spot-card-facts dt {
+  color: #555;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.125rem;
+  text-transform: uppercase;
+}
+
+.spot-card-facts dd {
+  color: #1a1a1a;
+  font-size: 1.0625rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.spot-card-subnote {
+  color: #555;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  margin-top: 0.25rem;
+}
+
+.big-number {
+  display: inline-block;
+  font-size: 1.5rem;
+  font-weight: 900;
+  margin-right: 0.25rem;
+}
+
+.dot-row {
+  display: inline-flex;
+  gap: 4px;
+  vertical-align: middle;
+}
+
+.dot {
+  background: #e0d7c2;
+  border-radius: 999px;
+  display: inline-block;
+  height: 14px;
+  width: 14px;
+}
+
+.dot-on {
+  background: #b34a00;
+}
+
+.spot-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+}
+
+/* Parking list */
+.parking-list {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.parking-card {
+  background: #fbfaf6;
+  border: 1px solid #e6e1d4;
+  border-radius: 0.75rem;
+  padding: 1rem 1.125rem;
+}
+
+.parking-card h3 {
+  font-size: 1.125rem;
+  margin-bottom: 0.25rem;
+}
+
+.parking-card-serves {
+  margin-bottom: 0.25rem;
+}
+
+.parking-card-note {
+  color: #333;
+  margin-bottom: 0.625rem;
+}
+
+/* Race facts */
+.race-facts-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+.race-fact {
+  background: #fbfaf6;
+  border: 1px solid #e6e1d4;
+  border-left: 6px solid #b34a00;
+  border-radius: 0.75rem;
+  padding: 1rem 1.125rem;
+}
+
+.race-fact-eyebrow {
+  font-size: 0.8125rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+}
+
+.race-fact-big {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 0.375rem;
+}
+
+.race-fact-line {
+  color: #333;
+  margin-top: 0.25rem;
+}
+
+.race-fact-note {
+  color: #1a1a1a;
+  margin-top: 0.625rem;
+}
+
+.planner-footer-note a {
+  color: #b34a00;
+  font-weight: 700;
+}
+
+@media (min-width: 768px) {
+  .planner-map {
+    height: 60vh;
+    max-height: 600px;
+  }
+
+  .planner-map-wrapper {
+    grid-template-columns: 2fr 1fr;
+  }
+
+  .race-facts-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Make planner pages override the global dark body */
+.planner-page,
+.planner-page :is(button, a[role="button"]) {
+  border-radius: 0.625rem;
+}
+
+/* Hero image */
+.planner-hero-with-image {
+  overflow: hidden;
+  padding: 0;
+}
+
+.planner-hero-image-wrap {
+  background: #cdd9e5;
+  height: clamp(220px, 56vw, 360px);
+  overflow: hidden;
+  width: 100%;
+}
+
+.planner-hero-image {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+  width: 100%;
+}
+
+.planner-hero-text {
+  padding: 1.5rem 1.25rem;
+}
+
+/* Schematic map */
+.schematic-map {
+  border: 1px solid #e6e1d4;
+  border-radius: 0.75rem;
+  margin: 0;
+  overflow: hidden;
+}
+
+.schematic-map-svg {
+  background: #f1ede2;
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.schematic-map-caption {
+  background: #fbfaf6;
+  border-bottom: 1px solid #e6e1d4;
+  color: #555;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.875rem;
+}
+
+.schematic-map .planner-legend {
+  border: 0;
+  border-radius: 0;
+  border-top: 1px solid #e6e1d4;
+}
+
+/* Finish image */
+.planner-finish-image figure {
+  margin: 0;
+}
+
+.planner-finish-image-img {
+  border-radius: 0.75rem;
+  display: block;
+  height: auto;
+  max-height: 480px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.planner-finish-image figcaption {
+  color: #555;
+  font-size: 0.95rem;
+  margin-top: 0.625rem;
+  text-align: center;
+}
+
+/* Two destination cards under the hero */
+.destination-section h2 {
+  margin-bottom: 0.5rem;
+}
+
+.destination-cards {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+  margin-top: 0.75rem;
+}
+
+.destination-card {
+  background: #fbfaf6;
+  border: 2px solid #e6e1d4;
+  border-radius: 0.875rem;
+  padding: 1.25rem;
+}
+
+.destination-card-eyebrow {
+  font-size: 0.875rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.375rem;
+  text-transform: uppercase;
+}
+
+.destination-card h3 {
+  font-size: 1.25rem;
+  margin: 0 0 0.5rem;
+}
+
+.destination-card p {
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  margin: 0 0 1rem;
+}
+
+.destination-card-cta {
+  background: #1a1a1a;
+  border: 2px solid #1a1a1a;
+  border-radius: 0.75rem;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 1.0625rem;
+  font-weight: 800;
+  min-height: 56px;
+  padding: 0.875rem 1.25rem;
+  text-decoration: none;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.destination-card-cta:hover {
+  background: #333;
+}
+
+@media (min-width: 720px) {
+  .destination-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Itinerary timeline */
+.itinerary-list {
+  display: grid;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.itinerary-item {
+  background: #fbfaf6;
+  border: 1px solid #e6e1d4;
+  border-left: 6px solid #555;
+  border-radius: 0.75rem;
+  padding: 1rem 1.125rem;
+}
+
+.itinerary-time {
+  font-size: 0.875rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+}
+
+.itinerary-title {
+  font-size: 1.1875rem;
+  margin: 0 0 0.5rem;
+}
+
+.itinerary-body {
+  color: #1a1a1a;
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.itinerary-note {
+  background: #fff5e6;
+  border: 1px solid #f0c890;
+  border-radius: 0.5rem;
+  color: #5d3a00;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  margin-top: 0.75rem;
+  padding: 0.625rem 0.75rem;
+}
+
+.itinerary-stops {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+
+.itinerary-stop {
+  background: #ffffff;
+  border: 1px solid #e6e1d4;
+  border-radius: 0.5rem;
+  padding: 0.625rem 0.75rem;
+}
+
+.itinerary-stop-label {
+  font-size: 1rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.itinerary-stop-address {
+  color: #555;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  margin: 0.125rem 0 0;
+}
+
+.itinerary-stop-detail {
+  color: #1a1a1a;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  margin: 0.125rem 0 0;
+}
+
+.itinerary-stop-link {
+  display: inline-block;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  margin-top: 0.5rem;
+  text-decoration: underline;
+}
+
+.itinerary-path {
+  background: #fbfaf6;
+  border: 1px solid #e6e1d4;
+  border-left: 4px solid #555;
+  border-radius: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem 0.875rem;
+}
+
+.itinerary-path-heading {
+  font-size: 1.0625rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+.itinerary-path-bestfor {
+  color: #555;
+  font-size: 0.9375rem;
+  font-style: italic;
+  margin: 0.125rem 0 0;
+}
+
+.itinerary-path-body {
+  color: #1a1a1a;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0.5rem 0 0;
+}
+
+/* Real map iframe (legacy class kept for backwards compat) */
+.real-map-frame {
+  background: #e7eef3;
+  border: 1px solid #e6e1d4;
+  border-radius: 0.75rem;
+  margin-top: 0.75rem;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 520px;
+}
+
+.real-map-frame iframe {
+  border: 0;
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+/* Corridor map: pure-SVG schematic spectator orientation map.
+   No tile iframe — we deliberately don't draw a precise course because
+   we don't have verified GPS coordinates. */
+.corridor-map {
+  margin-top: 0.75rem;
+}
+
+.corridor-map-caption {
+  background: #fff5e6;
+  border: 1px solid #f0c890;
+  border-radius: 0.5rem;
+  color: #5d3a00;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  margin: 0 0 0.625rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.corridor-map-frame {
+  background: #f3efe4;
+  border: 1px solid #e6e1d4;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  /* Schematic is taller than the old tile view so it reads on mobile. */
+  aspect-ratio: 800 / 420;
+  max-height: 560px;
+}
+
+.corridor-map-svg {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.corridor-map-legend {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+
+.corridor-map-legend li {
+  align-items: flex-start;
+  background: #fbfaf6;
+  border: 1px solid #e6e1d4;
+  border-radius: 0.5rem;
+  color: #222;
+  display: flex;
+  font-size: 0.9375rem;
+  gap: 0.625rem;
+  line-height: 1.4;
+  padding: 0.5rem 0.625rem;
+}
+
+.corridor-map-swatch {
+  border-radius: 999px;
+  display: inline-block;
+  flex-shrink: 0;
+  height: 14px;
+  margin-top: 4px;
+  width: 14px;
+}
+
+.map-orientation-note {
+  background: #fff5e6;
+  border: 1px solid #f0c890;
+  border-radius: 0.5rem;
+  color: #5d3a00;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  margin-top: 0.75rem;
+  padding: 0.625rem 0.75rem;
+}
+
+.map-pins-title {
+  font-size: 0.9375rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin: 1.25rem 0 0.5rem;
+  text-transform: uppercase;
+}
+
+.map-pins-list {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.map-pin-card {
+  background: #fbfaf6;
+  border: 1px solid #e6e1d4;
+  border-left: 6px solid #555;
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+}
+
+.map-pin-head {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.map-pin-badge {
+  align-items: center;
+  background: #555;
+  border-radius: 999px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 1.125rem;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.map-pin-name {
+  color: #111;
+  font-size: 1.0625rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.map-pin-role {
+  font-size: 0.8125rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.map-pin-desc {
+  color: #333;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  margin: 0.5rem 0 0.625rem;
+}
+
+.map-pin-link {
+  color: #b34a00;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  text-decoration: underline;
+}
+
+.map-course-legend {
+  color: #333;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  margin-top: 1rem;
+}
+
+/* Parking section spacing */
+.parking-section .parking-card-access {
+  color: #1a1a1a;
+  font-size: 0.9375rem;
+  margin-top: 0.25rem;
+}
+
+/* Race-facts accordion */
+.race-facts-accordion {
+  background: #fbfaf6;
+  border: 1px solid #e6e1d4;
+  border-radius: 0.75rem;
+  padding: 0;
+}
+
+.race-facts-accordion[open] {
+  padding-bottom: 1rem;
+}
+
+.race-facts-accordion summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 1.1875rem;
+  font-weight: 800;
+  gap: 0.5rem;
+  justify-content: space-between;
+  list-style: none;
+  min-height: 56px;
+  padding: 1rem 1.125rem;
+}
+
+.race-facts-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.race-facts-summary-title {
+  color: #111;
+}
+
+.race-facts-summary-hint {
+  color: #b34a00;
+  font-size: 0.9375rem;
+  font-weight: 800;
+}
+
+.race-facts-accordion[open] .race-facts-summary-hint::after {
+  content: " (open)";
+  color: #555;
+}
+
+.race-facts-accordion .race-facts-grid {
+  padding: 0 1.125rem;
+}
+

@@ -41,7 +41,7 @@ export const mapPoints: MapPoint[] = [
     type: "Transition",
     category: "raceAnchors",
     description:
-      "Confirmed transition area at Memorial Park. Ben reaches this area after the swim exit jog and before bike/run movements.",
+      "Transition area just past the Cummer Museum, at or near Memorial Park. Ben reaches this area after the swim ends near the Cummer and before bike/run movements.",
     mobilityNotes:
       "Expect athlete-only fencing and crowding. Use nearby sidewalks and pick a single family regroup point outside restricted paths.",
     bestTime: "Pre-race, swim exit window, T2, and repeated run-loop sightings.",
@@ -53,11 +53,11 @@ export const mapPoints: MapPoint[] = [
   },
   {
     id: "post-st-dock-swim-exit",
-    name: "Post St Dock / Swim Exit",
+    name: "Swim exit near Cummer Museum",
     type: "Swim exit",
     category: "raceAnchors",
     description:
-      "Confirmed swim exit area near Post St dock, followed by an approximately 0.27 mile jog to Memorial Park transition.",
+      "The swim ends in the St. Johns River near the Cummer Museum of Art and Gardens, followed by a short jog to the transition area just past the museum at Memorial Park.",
     mobilityNotes:
       "Likely congested and fast-moving. Avoid crossing athlete flow and use this as a quick sighting point, not a long stay.",
     bestTime: "Swim exit window only.",
@@ -89,7 +89,7 @@ export const mapPoints: MapPoint[] = [
     type: "Swim start",
     category: "raceAnchors",
     description:
-      "Confirmed swim start area at Metropolitan Park, 64 Gator Bowl Blvd.",
+      "Swim start at Metropolitan Park, 64 Gator Bowl Blvd. The swim takes place in the St. Johns River and runs west toward the Cummer Museum.",
     mobilityNotes:
       "Plan extra arrival time and assume nearby roads and lots may be controlled by race operations.",
     bestTime: "Early morning pre-race and swim start.",
@@ -201,10 +201,10 @@ export const mapPoints: MapPoint[] = [
     type: "Restaurant",
     category: "restaurants",
     description:
-      "Breakfast and lunch option near Riverside / Brooklyn for spectators who need a simple meal stop.",
+      "Breakfast and lunch option in Riverside for spectators who need a simple meal stop. Note: there are no cafes or restaurants on the riverside walking path where you watch the swim — eat before you head down to the water.",
     mobilityNotes:
       "May be busy on race morning. Keep this as a backup, not a timing-critical stop.",
-    bestTime: "Morning backup or early lunch while Ben is on the bike.",
+    bestTime: "Morning backup (eat before the swim) or early lunch while Ben is on the bike.",
     coordinates: {
       lat: 30.3189,
       lng: -81.6696,
