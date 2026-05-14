@@ -201,8 +201,8 @@ const RIVER_AND_POST_QUERY =
 const ITINERARY: ItineraryItem[] = [
   {
     time: "Around 7:30 AM",
-    title: "Arrive at the Cummer Art Museum — coffee in hand",
-    body: "Park in the Cummer lot. Coffee in hand. From here, walk along the riverwalk / riverside path toward where Ben exits the swim and transitions. Do not use the downtown garages for the swim — the walk is too long.",
+    title: "Arrive at the Cummer Art Museum",
+    body: "Park in the Cummer lot, coffee in hand. From here, walk along the riverwalk / riverside path toward where Ben exits the swim and transitions. Do not use the downtown garages for the swim — the walk is too long.",
     note: `FOOD NOTE: ${SWIM_FOOD_WARNING}`,
     accent: "swim",
     stops: [
@@ -795,8 +795,10 @@ export function SupportPlanner() {
       <section className="planner-section itinerary-section" id="itinerary">
         <h2>The plan for race day</h2>
         <p className="planner-section-lead">
-          A simple timeline put together by Cat, who knows Jacksonville. Follow
-          this order and you&apos;ll see Ben several times without scrambling.
+          Follow this order: start at Cummer for the swim, take the breakfast
+          break in Avondale, choose a bike-window plan, then regroup for Willow
+          Branch and the finish. You&apos;ll see Ben several times without
+          scrambling.
         </p>
         <ol className="itinerary-list">
           {ITINERARY.map((item, idx) => {
