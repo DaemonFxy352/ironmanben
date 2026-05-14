@@ -167,51 +167,149 @@ const PARKING_OPTIONS = [
   },
 ];
 
+type ItineraryStop = {
+  label: string;
+  address?: string;
+  directionsQuery: string;
+  detail?: string;
+};
+
+type ItineraryPath = {
+  heading: string;
+  bestFor?: string;
+  body: string;
+  stops?: ItineraryStop[];
+};
+
 type ItineraryItem = {
   time: string;
   title: string;
   body: string;
   note?: string;
   accent: "swim" | "bike" | "run" | "info";
+  stops?: ItineraryStop[];
+  paths?: ItineraryPath[];
 };
+
+const SOUTHERN_GROUNDS_ADDRESS =
+  "3562 St Johns Ave, Jacksonville, FL 32205";
+const SOUTHERN_GROUNDS_QUERY =
+  "Southern Grounds, 3562 St Johns Ave, Jacksonville, FL 32205";
+const RIVER_AND_POST_QUERY =
+  "River & Post, 1000 Riverside Ave, Jacksonville, FL 32204";
 
 const ITINERARY: ItineraryItem[] = [
   {
-    time: "7:00 AM",
-    title: "Park at the Cummer Art Museum lot",
-    body: "This is the best parking for the swim morning. The transition area is just past the museum, near Memorial Park, and the riverside walking path is right there. Do not use the downtown garages for the swim — the walk is too long.",
+    time: "Around 7:30 AM",
+    title: "Arrive at the Cummer Art Museum — coffee in hand",
+    body: "Park in the Cummer lot. Coffee in hand. From here, walk along the riverwalk / riverside path toward where Ben exits the swim and transitions. Do not use the downtown garages for the swim — the walk is too long.",
     note: `FOOD NOTE: ${SWIM_FOOD_WARNING}`,
     accent: "swim",
+    stops: [
+      {
+        label: "Cummer Art Museum lot",
+        address: "829 Riverside Ave, Jacksonville, FL 32204",
+        directionsQuery:
+          "Cummer Museum of Art and Gardens, 829 Riverside Ave, Jacksonville, FL 32204",
+        detail: "Morning parking · flat walk to the river path",
+      },
+    ],
   },
   {
-    time: "~7:30 AM",
-    title: "Watch the swim start",
-    body: "Ben starts at Metropolitan Park, across the St. Johns River. From the riverside walking path through Brooklyn and Riverside you can see the swim unfold on the water. He is a strong swimmer — you will likely see him once from a distance. Don't over-plan the morning around this.",
+    time: "~7:30 AM onward",
+    title: "Walk the riverside path · watch the swim, then cheer at transition",
+    body: "Ben starts the swim at Metropolitan Park, across the St. Johns River. Walk along the riverside path through Brooklyn and Riverside — you can see the swim out on the water. The swim ends near the Cummer, and the transition is just past it, at or near Memorial Park. Say goodbye and cheer as he bikes off.",
     accent: "swim",
   },
   {
-    time: "~8:00 AM",
-    title: "Catch him coming out of the water",
-    body: "The swim ends near the Cummer Museum of Art and Gardens. The transition area is just past the Cummer, at or near Memorial Park. Worth seeing if you're already parked nearby.",
-    accent: "swim",
+    time: "After he bikes off",
+    title: "Breakfast at Southern Grounds (Avondale)",
+    body: "Mom, Cat, and Cyndee head to Southern Grounds on St. Johns Ave for breakfast. Large outdoor patio, only a couple minutes from the transition area — easy to settle in after the swim cheer.",
+    accent: "info",
+    stops: [
+      {
+        label: "Southern Grounds — Avondale",
+        address: SOUTHERN_GROUNDS_ADDRESS,
+        directionsQuery: SOUTHERN_GROUNDS_QUERY,
+        detail: "Large outdoor patio · a couple minutes from transition",
+      },
+    ],
   },
   {
-    time: "~8:30 AM – Midday",
-    title: "Break while he bikes",
-    body: "Ben bikes 112 miles southeast toward Ponte Vedra Beach and back, twice. This takes several hours. Get lunch. Rest. You do not need to chase the bike.",
+    time: "Through the bike (several hours)",
+    title: "Pick one of two paths while Ben bikes",
+    body: "Ben bikes 112 miles out toward Ponte Vedra Beach and back, twice. Bikes are fast and hard to cheer, so don't feel obligated to chase him. Use this window — it's the longest stretch of the day.",
+    accent: "bike",
+    paths: [
+      {
+        heading: "Stay local · easy path (recommended)",
+        bestFor: "Best for Mom and Cyndee",
+        body: "After Southern Grounds breakfast, wander Avondale or San Marco — shops, bookstores, the cute neighborhoods. Then lunch or an early dinner at River & Post, or a rooftop drink, while waiting for Ben to come back toward transition.",
+        stops: [
+          {
+            label: "Southern Grounds — Avondale",
+            address: SOUTHERN_GROUNDS_ADDRESS,
+            directionsQuery: SOUTHERN_GROUNDS_QUERY,
+            detail: "Breakfast · large patio",
+          },
+          {
+            label: "Avondale shops & bookstores",
+            directionsQuery: "Shoppes of Avondale, Jacksonville, FL",
+            detail: "Walkable shopping district right around Southern Grounds",
+          },
+          {
+            label: "San Marco Square",
+            directionsQuery: "San Marco Square, Jacksonville, FL",
+            detail: "Optional second neighborhood · shops and cafes",
+          },
+          {
+            label: "River & Post",
+            directionsQuery: RIVER_AND_POST_QUERY,
+            detail: "Lunch / early dinner / rooftop drink near transition",
+          },
+        ],
+      },
+      {
+        heading: "Ponte Vedra optional path",
+        bestFor: "For anyone really wanting to try seeing him on the bike",
+        body: "Drive out toward Ponte Vedra to try and catch Ben on the bike course. Keep expectations low — bikes are fast and hard to cheer from the roadside, and you can easily miss him. This is optional, not the main plan.",
+      },
+    ],
+  },
+  {
+    time: "Late bike → start of the run",
+    title: "Back near transition · cheer the bike-to-run handoff",
+    body: "Head back near the transition zone to cheer Ben as he comes in off the bike and starts the run. River & Post is a short walk from here if you want to time it with a drink or a snack.",
     accent: "bike",
   },
   {
-    time: "~Midday onward",
-    title: "Go to Willow Branch Park",
-    body: "This is the most important part of your day. The run course loops through this neighborhood three times. Park at Willow Branch, find a shaded spot, and stay. You will see Ben three times without moving your car.",
+    time: "Through the run · 3 passes",
+    title: "Willow Branch Park · the most important stop",
+    body: "Move to Willow Branch Park and stay. The run course loops through this neighborhood three times — aim to cheer him on all 3 passes. Shade, flat walking, easy parking. You will see Ben three times without moving your car.",
     accent: "run",
+    stops: [
+      {
+        label: "Willow Branch Park",
+        address: "2870 Park St, Jacksonville, FL 32205",
+        directionsQuery: "Willow Branch Park, 2870 Park St, Jacksonville, FL 32205",
+        detail: "Plant yourself here · Ben passes 3 times",
+      },
+    ],
   },
   {
     time: "After his LAST pass",
-    title: "Drive to the finish line",
+    title: "Drive to Riverfront Plaza for the finish line",
     body: "When you see him run through Willow Branch for the third time, pack up and drive to Riverfront Plaza. You will get there before him and be in position to see him cross the finish line.",
     accent: "run",
+    stops: [
+      {
+        label: "Riverfront Plaza · Finish Line",
+        address: "2 Independent Dr, Jacksonville, FL 32202",
+        directionsQuery:
+          "Riverfront Plaza, 2 Independent Dr, Jacksonville, FL 32202",
+        detail: "Finish line · IRONMAN Village · easy seated viewing",
+      },
+    ],
   },
 ];
 
@@ -581,6 +679,53 @@ function PinLabel({ pin, anchor, children }: PinLabelProps) {
   );
 }
 
+function ItineraryStops({ stops }: { stops: ItineraryStop[] }) {
+  return (
+    <ul className="itinerary-stops">
+      {stops.map((stop, idx) => (
+        <li key={idx} className="itinerary-stop">
+          <p className="itinerary-stop-label">{stop.label}</p>
+          {stop.address ? (
+            <p className="itinerary-stop-address">{stop.address}</p>
+          ) : null}
+          {stop.detail ? (
+            <p className="itinerary-stop-detail">{stop.detail}</p>
+          ) : null}
+          <a
+            className="itinerary-stop-link"
+            href={directionsLink(stop.directionsQuery)}
+            rel="noreferrer"
+            target="_blank"
+          >
+            Get directions
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ItineraryPathBlock({
+  path,
+  accentColor,
+}: {
+  path: ItineraryPath;
+  accentColor: string;
+}) {
+  return (
+    <div className="itinerary-path" style={{ borderColor: accentColor }}>
+      <p className="itinerary-path-heading" style={{ color: accentColor }}>
+        {path.heading}
+      </p>
+      {path.bestFor ? (
+        <p className="itinerary-path-bestfor">{path.bestFor}</p>
+      ) : null}
+      <p className="itinerary-path-body">{path.body}</p>
+      {path.stops ? <ItineraryStops stops={path.stops} /> : null}
+    </div>
+  );
+}
+
 export function SupportPlanner() {
   return (
     <main className="planner-page">
@@ -607,7 +752,10 @@ export function SupportPlanner() {
       <section className="planner-section destination-section" aria-label="Pick a place to cheer">
         <h2>Pick where you&apos;ll be</h2>
         <p className="planner-section-lead">
-          Two best choices. Tap one to get driving directions.
+          The day starts at the <strong>Cummer Art Museum</strong> around{" "}
+          <strong>7:30 AM</strong> for the swim cheer. After that, these are the
+          two best places to spend the rest of the day — tap one for driving
+          directions.
         </p>
         <div className="destination-cards">
           <article className="destination-card" style={{ borderColor: disciplineColors.run }}>
@@ -658,6 +806,12 @@ export function SupportPlanner() {
                 <div className="itinerary-time" style={{ color }}>{item.time}</div>
                 <h3 className="itinerary-title">{item.title}</h3>
                 <p className="itinerary-body">{item.body}</p>
+                {item.stops ? <ItineraryStops stops={item.stops} /> : null}
+                {item.paths
+                  ? item.paths.map((path, pIdx) => (
+                      <ItineraryPathBlock key={pIdx} accentColor={color} path={path} />
+                    ))
+                  : null}
                 {item.note ? (
                   <p className="itinerary-note">{item.note}</p>
                 ) : null}

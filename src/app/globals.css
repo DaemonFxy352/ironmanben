@@ -1072,6 +1072,79 @@ body.sheet-open {
   padding: 0.625rem 0.75rem;
 }
 
+.itinerary-stops {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+
+.itinerary-stop {
+  background: #ffffff;
+  border: 1px solid #e6e1d4;
+  border-radius: 0.5rem;
+  padding: 0.625rem 0.75rem;
+}
+
+.itinerary-stop-label {
+  font-size: 1rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.itinerary-stop-address {
+  color: #555;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  margin: 0.125rem 0 0;
+}
+
+.itinerary-stop-detail {
+  color: #1a1a1a;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  margin: 0.125rem 0 0;
+}
+
+.itinerary-stop-link {
+  display: inline-block;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  margin-top: 0.5rem;
+  text-decoration: underline;
+}
+
+.itinerary-path {
+  background: #fbfaf6;
+  border: 1px solid #e6e1d4;
+  border-left: 4px solid #555;
+  border-radius: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem 0.875rem;
+}
+
+.itinerary-path-heading {
+  font-size: 1.0625rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+.itinerary-path-bestfor {
+  color: #555;
+  font-size: 0.9375rem;
+  font-style: italic;
+  margin: 0.125rem 0 0;
+}
+
+.itinerary-path-body {
+  color: #1a1a1a;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0.5rem 0 0;
+}
+
 /* Real map iframe (legacy class kept for backwards compat) */
 .real-map-frame {
   background: #e7eef3;
