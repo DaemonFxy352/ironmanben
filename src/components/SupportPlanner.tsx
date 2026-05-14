@@ -241,9 +241,8 @@ function CorridorMap() {
   return (
     <div className="corridor-map">
       <p className="corridor-map-caption">
-        <strong>Orientation map — not a turn-by-turn course map.</strong> The
-        exact streets aren&apos;t shown. Use this to find <em>where</em> to go;
-        use Google Maps for driving directions.
+        <strong>Orientation only — not a turn-by-turn course map.</strong>{" "}
+        Use the pin links below for driving directions.
       </p>
 
       <div className="corridor-map-frame">
@@ -671,12 +670,8 @@ export function SupportPlanner() {
       <section className="planner-section" id="map">
         <h2>Spectator orientation map</h2>
         <p className="planner-section-lead">
-          A simple diagram of the race corridor — <strong>not</strong> a
-          turn-by-turn course map. The orange shaded area is where the{" "}
-          <strong>run loops past three times</strong>, with{" "}
-          <strong>Willow Branch Park</strong> as the spot to plant yourself.
-          The blue arrow shows the swim in the river. The bike heads off the
-          map southeast and isn&apos;t worth chasing.
+          Orange = where the run loops 3×.{" "}
+          <strong>Willow Branch Park</strong> is the spot to stand.
         </p>
 
         <CorridorMap />
